@@ -7,24 +7,18 @@ import { NormalizedMessage } from "./typesRaw";
 import { isMachineOnline } from '@/utils/machineUtils';
 import { applySettings, Settings } from "./settings";
 import { LocalSettings, applyLocalSettings } from "./localSettings";
-import { Purchases, customerInfoToPurchases } from "./purchases";
+import { Purchases, purchasesParse } from "./purchases";
 import { TodoState } from "../-zen/model/ops";
 import { Profile } from "./profile";
 import { UserProfile, RelationshipUpdatedEvent } from "./friendTypes";
 import { loadSettings, loadLocalSettings, saveLocalSettings, saveSettings, loadPurchases, savePurchases, loadProfile, saveProfile, loadSessionDrafts, saveSessionDrafts, loadSessionPermissionModes, saveSessionPermissionModes } from "./persistence";
 import type { PermissionMode } from '@/components/PermissionModeSelector';
-import type { CustomerInfo } from './revenueCat/types';
 import React from "react";
 import { sync } from "./sync";
-import { getCurrentRealtimeSessionId, getVoiceSession } from '@/realtime/RealtimeSession';
 import { isMutableTool } from "@/components/tools/knownTools";
 import { projectManager } from "./projectManager";
 import { DecryptedArtifact } from "./artifactTypes";
 import { FeedItem } from "./feedTypes";
-
-// Debounce timer for realtimeMode changes
-let realtimeModeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-const REALTIME_MODE_DEBOUNCE_MS = 150;
 
 /**
  * Centralized session online state resolver
@@ -86,8 +80,6 @@ interface StorageState {
     feedHasMore: boolean;
     feedLoaded: boolean;  // True after initial feed fetch
     friendsLoaded: boolean;  // True after initial friends fetch
-    realtimeStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
-    realtimeMode: 'idle' | 'speaking';
     socketStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
     socketLastConnectedAt: number | null;
     socketLastDisconnectedAt: number | null;
@@ -104,15 +96,12 @@ interface StorageState {
     applySettings: (settings: Settings, version: number) => void;
     applySettingsLocal: (settings: Partial<Settings>) => void;
     applyLocalSettings: (settings: Partial<LocalSettings>) => void;
-    applyPurchases: (customerInfo: CustomerInfo) => void;
+    applyPurchases: (purchases: Purchases) => void;
     applyProfile: (profile: Profile) => void;
     applyTodos: (todoState: TodoState) => void;
     applyGitStatus: (sessionId: string, status: GitStatus | null) => void;
     applyNativeUpdateStatus: (status: { available: boolean; updateUrl?: string } | null) => void;
     isMutableToolCall: (sessionId: string, callId: string) => boolean;
-    setRealtimeStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => void;
-    setRealtimeMode: (mode: 'idle' | 'speaking', immediate?: boolean) => void;
-    clearRealtimeModeDebounce: () => void;
     setSocketStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => void;
     getActiveSessions: () => Session[];
     updateSessionDraft: (sessionId: string, draft: string | null) => void;
@@ -273,8 +262,6 @@ export const storage = create<StorageState>()((set, get) => {
         sessionListViewData: null,
         sessionMessages: {},
         sessionGitStatus: {},
-        realtimeStatus: 'disconnected',
-        realtimeMode: 'idle',
         socketStatus: 'disconnected',
         socketLastConnectedAt: null,
         socketLastDisconnectedAt: null,
@@ -379,36 +366,6 @@ export const storage = create<StorageState>()((set, get) => {
                 const existingSessionMessages = updatedSessionMessages[session.id];
                 if (existingSessionMessages && newSession.agentState &&
                     (!oldSession || newSession.agentStateVersion > (oldSession.agentStateVersion || 0))) {
-
-                    // Check for NEW permission requests before processing
-                    const currentRealtimeSessionId = getCurrentRealtimeSessionId();
-                    const voiceSession = getVoiceSession();
-
-                    // console.log('[REALTIME DEBUG] Permission check:', {
-                    //     currentRealtimeSessionId,
-                    //     sessionId: session.id,
-                    //     match: currentRealtimeSessionId === session.id,
-                    //     hasVoiceSession: !!voiceSession,
-                    //     oldRequests: Object.keys(oldSession?.agentState?.requests || {}),
-                    //     newRequests: Object.keys(newSession.agentState?.requests || {})
-                    // });
-
-                    if (currentRealtimeSessionId === session.id && voiceSession) {
-                        const oldRequests = oldSession?.agentState?.requests || {};
-                        const newRequests = newSession.agentState?.requests || {};
-
-                        // Find NEW permission requests only
-                        for (const [requestId, request] of Object.entries(newRequests)) {
-                            if (!oldRequests[requestId]) {
-                                // This is a NEW permission request
-                                const toolName = request.tool;
-                                // console.log('[REALTIME DEBUG] Sending permission notification for:', toolName);
-                                voiceSession.sendTextMessage(
-                                    `Claude is requesting permission to use the ${toolName} tool`
-                                );
-                            }
-                        }
-                    }
 
                     // Process new AgentState through reducer
                     const reducerResult = reducer(existingSessionMessages.reducerState, [], newSession.agentState);
@@ -648,10 +605,7 @@ export const storage = create<StorageState>()((set, get) => {
                 localSettings: updatedLocalSettings
             };
         }),
-        applyPurchases: (customerInfo: CustomerInfo) => set((state) => {
-            // Transform CustomerInfo to our Purchases format
-            const purchases = customerInfoToPurchases(customerInfo);
-
+        applyPurchases: (purchases: Purchases) => set((state) => {
             // Always save and update - no need for version checks
             savePurchases(purchases);
             return {
@@ -690,35 +644,6 @@ export const storage = create<StorageState>()((set, get) => {
             ...state,
             nativeUpdateStatus: status
         })),
-        setRealtimeStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => set((state) => ({
-            ...state,
-            realtimeStatus: status
-        })),
-        setRealtimeMode: (mode: 'idle' | 'speaking', immediate?: boolean) => {
-            if (immediate) {
-                // Clear any pending debounce and set immediately
-                if (realtimeModeDebounceTimer) {
-                    clearTimeout(realtimeModeDebounceTimer);
-                    realtimeModeDebounceTimer = null;
-                }
-                set((state) => ({ ...state, realtimeMode: mode }));
-            } else {
-                // Debounce mode changes to avoid flickering
-                if (realtimeModeDebounceTimer) {
-                    clearTimeout(realtimeModeDebounceTimer);
-                }
-                realtimeModeDebounceTimer = setTimeout(() => {
-                    realtimeModeDebounceTimer = null;
-                    set((state) => ({ ...state, realtimeMode: mode }));
-                }, REALTIME_MODE_DEBOUNCE_MS);
-            }
-        },
-        clearRealtimeModeDebounce: () => {
-            if (realtimeModeDebounceTimer) {
-                clearTimeout(realtimeModeDebounceTimer);
-                realtimeModeDebounceTimer = null;
-            }
-        },
         setSocketStatus: (status: 'disconnected' | 'connecting' | 'connected' | 'error') => set((state) => {
             const now = Date.now();
             const updates: Partial<StorageState> = {
@@ -1224,14 +1149,6 @@ export function useArtifactsCount(): number {
 
 export function useEntitlement(id: KnownEntitlements): boolean {
     return storage(useShallow((state) => state.purchases.entitlements[id] ?? false));
-}
-
-export function useRealtimeStatus(): 'disconnected' | 'connecting' | 'connected' | 'error' {
-    return storage(useShallow((state) => state.realtimeStatus));
-}
-
-export function useRealtimeMode(): 'idle' | 'speaking' {
-    return storage(useShallow((state) => state.realtimeMode));
 }
 
 export function useSocketStatus() {

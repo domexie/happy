@@ -2,12 +2,6 @@ import Constants from 'expo-constants';
 import { requireOptionalNativeModule } from 'expo-modules-core';
 
 export interface AppConfig {
-    postHogKey?: string;
-    revenueCatAppleKey?: string;
-    revenueCatGoogleKey?: string;
-    revenueCatStripeKey?: string;
-    elevenLabsAgentIdDev?: string;
-    elevenLabsAgentIdProd?: string;
     serverUrl?: string;
 }
 
@@ -15,7 +9,7 @@ export interface AppConfig {
  * Loads app configuration from various manifest sources.
  * Looks for the "app" field in expoConfig.extra across different manifests
  * and merges them into a single configuration object.
- * 
+ *
  * Priority (later overrides earlier):
  * 1. ExponentConstants native module manifest (fetches embedded manifest)
  * 2. Constants.expoConfig
@@ -68,30 +62,6 @@ export function loadAppConfig(): AppConfig {
     // Why: Native config is baked at prebuild time, but EXPO_PUBLIC_* vars
     // are available at runtime via process.env. This allows devs to change
     // keys without rebuilding native code.
-    if (process.env.EXPO_PUBLIC_REVENUE_CAT_APPLE && config.revenueCatAppleKey !== process.env.EXPO_PUBLIC_REVENUE_CAT_APPLE) {
-        console.log('[loadAppConfig] Override revenueCatAppleKey from EXPO_PUBLIC_REVENUE_CAT_APPLE');
-        config.revenueCatAppleKey = process.env.EXPO_PUBLIC_REVENUE_CAT_APPLE;
-    }
-    if (process.env.EXPO_PUBLIC_REVENUE_CAT_GOOGLE && config.revenueCatGoogleKey !== process.env.EXPO_PUBLIC_REVENUE_CAT_GOOGLE) {
-        console.log('[loadAppConfig] Override revenueCatGoogleKey from EXPO_PUBLIC_REVENUE_CAT_GOOGLE');
-        config.revenueCatGoogleKey = process.env.EXPO_PUBLIC_REVENUE_CAT_GOOGLE;
-    }
-    if (process.env.EXPO_PUBLIC_REVENUE_CAT_STRIPE && config.revenueCatStripeKey !== process.env.EXPO_PUBLIC_REVENUE_CAT_STRIPE) {
-        console.log('[loadAppConfig] Override revenueCatStripeKey from EXPO_PUBLIC_REVENUE_CAT_STRIPE');
-        config.revenueCatStripeKey = process.env.EXPO_PUBLIC_REVENUE_CAT_STRIPE;
-    }
-    if (process.env.EXPO_PUBLIC_POSTHOG_KEY && config.postHogKey !== process.env.EXPO_PUBLIC_POSTHOG_KEY) {
-        console.log('[loadAppConfig] Override postHogKey from EXPO_PUBLIC_POSTHOG_KEY');
-        config.postHogKey = process.env.EXPO_PUBLIC_POSTHOG_KEY;
-    }
-    if (process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID_DEV && config.elevenLabsAgentIdDev !== process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID_DEV) {
-        console.log('[loadAppConfig] Override elevenLabsAgentIdDev from EXPO_PUBLIC_ELEVENLABS_AGENT_ID_DEV');
-        config.elevenLabsAgentIdDev = process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID_DEV;
-    }
-    if (process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID_PROD && config.elevenLabsAgentIdProd !== process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID_PROD) {
-        console.log('[loadAppConfig] Override elevenLabsAgentIdProd from EXPO_PUBLIC_ELEVENLABS_AGENT_ID_PROD');
-        config.elevenLabsAgentIdProd = process.env.EXPO_PUBLIC_ELEVENLABS_AGENT_ID_PROD;
-    }
     if (process.env.EXPO_PUBLIC_SERVER_URL && config.serverUrl !== process.env.EXPO_PUBLIC_SERVER_URL) {
         console.log('[loadAppConfig] Override serverUrl from EXPO_PUBLIC_SERVER_URL');
         config.serverUrl = process.env.EXPO_PUBLIC_SERVER_URL;

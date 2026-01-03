@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { View, ActivityIndicator, Text, Pressable } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { useFriendRequests, useSocketStatus, useRealtimeStatus } from '@/sync/storage';
+import { useFriendRequests, useSocketStatus } from '@/sync/storage';
 import { useVisibleSessionListViewData } from '@/hooks/useVisibleSessionListViewData';
 import { useIsTablet } from '@/utils/responsive';
 import { useRouter } from 'expo-router';
@@ -14,13 +14,11 @@ import { SettingsViewWrapper } from './SettingsViewWrapper';
 import { SessionsListWrapper } from './SessionsListWrapper';
 import { Header } from './navigation/Header';
 import { HeaderLogo } from './HeaderLogo';
-import { VoiceAssistantStatusBar } from './VoiceAssistantStatusBar';
 import { StatusDot } from './StatusDot';
 import { Ionicons } from '@expo/vector-icons';
 import { Typography } from '@/constants/Typography';
 import { t } from '@/text';
 import { isUsingCustomServer } from '@/sync/serverConfig';
-import { trackFriendsSearch } from '@/track';
 
 interface MainViewProps {
     variant: 'phone' | 'sidebar';
@@ -193,7 +191,6 @@ const HeaderRight = React.memo(({ activeTab }: { activeTab: ActiveTabType }) => 
         return (
             <Pressable
                 onPress={() => {
-                    trackFriendsSearch();
                     router.push('/friends/search');
                 }}
                 hitSlop={15}
@@ -229,7 +226,6 @@ export const MainView = React.memo(({ variant }: MainViewProps) => {
     const isTablet = useIsTablet();
     const router = useRouter();
     const friendRequests = useFriendRequests();
-    const realtimeStatus = useRealtimeStatus();
 
     // Tab state management
     // NOTE: Zen tab removed - the feature never got to a useful state
@@ -308,9 +304,6 @@ export const MainView = React.memo(({ variant }: MainViewProps) => {
                         headerShadowVisible={false}
                         headerTransparent={true}
                     />
-                    {realtimeStatus !== 'disconnected' && (
-                        <VoiceAssistantStatusBar variant="full" />
-                    )}
                 </View>
                 {renderTabContent()}
             </View>

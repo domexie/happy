@@ -15,10 +15,7 @@ import { SidebarNavigator } from '@/components/SidebarNavigator';
 import sodium from '@/encryption/libsodium.lib';
 import { View, Platform } from 'react-native';
 import { ModalProvider } from '@/modal';
-import { PostHogProvider } from 'posthog-react-native';
-import { tracking } from '@/track/tracking';
 import { syncRestore } from '@/sync/sync';
-import { useTrackScreens } from '@/track/useTrackScreens';
 import { RealtimeProvider } from '@/realtime/RealtimeProvider';
 import { FaviconPermissionIndicator } from '@/components/web/FaviconPermissionIndicator';
 import { CommandPaletteProvider } from '@/components/CommandPalette/CommandPaletteProvider';
@@ -203,9 +200,6 @@ export default function RootLayout() {
     }, [initState]);
 
 
-    // Track the screens
-    useTrackScreens()
-
     //
     // Not inited
     //
@@ -240,13 +234,6 @@ export default function RootLayout() {
             </KeyboardProvider>
         </SafeAreaProvider>
     );
-    if (tracking) {
-        providers = (
-            <PostHogProvider client={tracking}>
-                {providers}
-            </PostHogProvider>
-        );
-    }
 
     return (
         <>

@@ -1,10 +1,9 @@
 import * as React from 'react';
 import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { useAcceptedFriends, useFriendRequests, useRequestedFriends, useFeedItems, useFeedLoaded, useFriendsLoaded, useRealtimeStatus } from '@/sync/storage';
+import { useAcceptedFriends, useFriendRequests, useRequestedFriends, useFeedItems, useFeedLoaded, useFriendsLoaded } from '@/sync/storage';
 import { UserCard } from '@/components/UserCard';
 import { t } from '@/text';
-import { trackFriendsSearch, trackFriendsProfileView } from '@/track';
 import { ItemGroup } from '@/components/ItemGroup';
 import { UpdateBanner } from './UpdateBanner';
 import { Typography } from '@/constants/Typography';
@@ -15,7 +14,6 @@ import { Header } from './navigation/Header';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { FeedItemCard } from './FeedItemCard';
-import { VoiceAssistantStatusBar } from './VoiceAssistantStatusBar';
 
 const styles = StyleSheet.create((theme) => ({
     container: {
@@ -80,7 +78,6 @@ function HeaderRightTablet() {
     return (
         <Pressable
             onPress={() => {
-                trackFriendsSearch();
                 router.push('/friends/search');
             }}
             hitSlop={15}
@@ -106,7 +103,6 @@ export const InboxView = React.memo(({}: InboxViewProps) => {
     const friendsLoaded = useFriendsLoaded();
     const { theme } = useUnistyles();
     const isTablet = useIsTablet();
-    const realtimeStatus = useRealtimeStatus();
 
     const isLoading = !feedLoaded || !friendsLoaded;
     const isEmpty = !isLoading && friendRequests.length === 0 && requestedFriends.length === 0 && friends.length === 0 && feedItems.length === 0;
@@ -123,9 +119,6 @@ export const InboxView = React.memo(({}: InboxViewProps) => {
                             headerShadowVisible={false}
                             headerTransparent={true}
                         />
-                        {realtimeStatus !== 'disconnected' && (
-                            <VoiceAssistantStatusBar variant="full" />
-                        )}
                     </View>
                 )}
                 <UpdateBanner />
@@ -148,9 +141,6 @@ export const InboxView = React.memo(({}: InboxViewProps) => {
                             headerShadowVisible={false}
                             headerTransparent={true}
                         />
-                        {realtimeStatus !== 'disconnected' && (
-                            <VoiceAssistantStatusBar variant="full" />
-                        )}
                     </View>
                 )}
                 <UpdateBanner />
@@ -179,9 +169,6 @@ export const InboxView = React.memo(({}: InboxViewProps) => {
                         headerShadowVisible={false}
                         headerTransparent={true}
                     />
-                    {realtimeStatus !== 'disconnected' && (
-                        <VoiceAssistantStatusBar variant="full" />
-                    )}
                 </View>
             )}
             <ScrollView contentContainerStyle={{
@@ -212,7 +199,6 @@ export const InboxView = React.memo(({}: InboxViewProps) => {
                                     key={friend.id}
                                     user={friend}
                                     onPress={() => {
-                                        trackFriendsProfileView();
                                         router.push(`/user/${friend.id}`);
                                     }}
                                 />
@@ -229,7 +215,6 @@ export const InboxView = React.memo(({}: InboxViewProps) => {
                                     key={friend.id}
                                     user={friend}
                                     onPress={() => {
-                                        trackFriendsProfileView();
                                         router.push(`/user/${friend.id}`);
                                     }}
                                 />
@@ -246,7 +231,6 @@ export const InboxView = React.memo(({}: InboxViewProps) => {
                                     key={friend.id}
                                     user={friend}
                                     onPress={() => {
-                                        trackFriendsProfileView();
                                         router.push(`/user/${friend.id}`);
                                     }}
                                 />

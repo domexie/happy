@@ -14,7 +14,6 @@ import { useConnectTerminal } from '@/hooks/useConnectTerminal';
 import { useEntitlement, useLocalSettingMutable, useSetting } from '@/sync/storage';
 import { sync } from '@/sync/sync';
 import { isUsingCustomServer } from '@/sync/serverConfig';
-import { trackPaywallButtonClicked, trackWhatsNewClicked } from '@/track';
 import { Modal } from '@/modal';
 import { useMultiClick } from '@/hooks/useMultiClick';
 import { useAllMachines } from '@/sync/storage';
@@ -63,13 +62,8 @@ export const SettingsView = React.memo(function SettingsView() {
     };
 
     const handleSubscribe = async () => {
-        trackPaywallButtonClicked();
-        const result = await sync.presentPaywall();
-        if (!result.success) {
-            console.error('Failed to present paywall:', result.error);
-        } else if (result.purchased) {
-            console.log('Purchase successful!');
-        }
+        // presentPaywall removed - feature no longer available
+        Modal.alert(t('common.error'), 'This feature is no longer available.');
     };
 
     // Use the multi-click hook for version clicks
@@ -350,7 +344,6 @@ export const SettingsView = React.memo(function SettingsView() {
                     subtitle={t('settings.whatsNewSubtitle')}
                     icon={<Ionicons name="sparkles-outline" size={29} color="#FF9500" />}
                     onPress={() => {
-                        trackWhatsNewClicked();
                         router.push('/changelog');
                     }}
                 />
