@@ -178,6 +178,8 @@ export const es: TranslationStructure = {
         showFlavorIconsDescription: 'Mostrar íconos del proveedor de IA en los avatares de sesión',
         compactSessionView: 'Vista compacta de sesiones',
         compactSessionViewDescription: 'Mostrar sesiones activas en un diseño más compacto',
+        forceTabletMode: 'Forzar diseño de tablet',
+        forceTabletModeDescription: 'Usar diseño de barra lateral estilo tablet en pantallas más pequeñas',
     },
 
     settingsFeatures: {

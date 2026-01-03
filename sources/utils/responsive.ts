@@ -3,6 +3,7 @@ import { useWindowDimensions } from 'react-native';
 import { useMemo } from 'react';
 import { calculateDeviceDimensions, determineDeviceType, calculateHeaderHeight } from './deviceCalculations';
 import { isRunningOnMac } from './platform';
+import { useLocalSetting } from '@/sync/storage';
 
 // Re-export calculation functions for use in other components
 export { calculateDeviceDimensions, determineDeviceType, calculateHeaderHeight };
@@ -57,10 +58,11 @@ export function useDeviceType(): 'phone' | 'tablet' {
     }, [width, height]);
 }
 
-// Hook to detect if device is tablet
+// Hook to detect if device is tablet (or force tablet mode is enabled)
 export function useIsTablet(): boolean {
     const deviceType = useDeviceType();
-    return deviceType === 'tablet';
+    const forceTabletMode = useLocalSetting('forceTabletMode');
+    return deviceType === 'tablet' || forceTabletMode;
 }
 
 // Hook to detect landscape orientation

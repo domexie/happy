@@ -15,6 +15,8 @@ export const LocalSettingsSchema = z.object({
     acknowledgedCliVersions: z.record(z.string(), z.string()).describe('Acknowledged CLI versions per machine'),
     // Sidebar state (device-specific, mainly for tablets/desktop)
     sidebarCollapsed: z.boolean().describe('Whether the sidebar is collapsed to show only icons'),
+    // Force tablet layout on small screens
+    forceTabletMode: z.boolean().describe('Force tablet layout on phones and small screen devices'),
 });
 
 //
@@ -38,6 +40,7 @@ export const localSettingsDefaults: LocalSettings = {
     markdownCopyV2: false,
     acknowledgedCliVersions: {},
     sidebarCollapsed: false,
+    forceTabletMode: false,
 };
 Object.freeze(localSettingsDefaults);
 
