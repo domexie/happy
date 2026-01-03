@@ -274,7 +274,7 @@ function NewSessionScreen() {
     //
 
     const [permissionMode, setPermissionMode] = React.useState<PermissionMode>(() => {
-        // Initialize with last used permission mode if valid, otherwise default to 'default'
+        // Initialize with last used permission mode if valid, otherwise default to 'bypassPermissions' (Yolo mode)
         const validClaudeGeminiModes: PermissionMode[] = ['default', 'acceptEdits', 'plan', 'bypassPermissions'];
         const validCodexModes: PermissionMode[] = ['default', 'read-only', 'safe-yolo', 'yolo'];
 
@@ -285,12 +285,14 @@ function NewSessionScreen() {
                 return lastUsedPermissionMode as PermissionMode;
             }
         }
-        return 'default';
+        // Default to Yolo mode (bypassPermissions for claude/gemini, yolo for codex)
+        return agentType === 'codex' ? 'yolo' : 'bypassPermissions';
     });
 
     // Reset permission mode when agent type changes
     React.useEffect(() => {
-        setPermissionMode('default');
+        // Default to Yolo mode (bypassPermissions for claude/gemini, yolo for codex)
+        setPermissionMode(agentType === 'codex' ? 'yolo' : 'bypassPermissions');
     }, [agentType]);
 
     const handlePermissionModeChange = React.useCallback((mode: PermissionMode) => {
