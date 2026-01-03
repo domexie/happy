@@ -189,6 +189,8 @@ export const pl: TranslationStructure = {
         showFlavorIconsDescription: 'Wyświetlaj ikony dostawcy AI na awatarach sesji',
         compactSessionView: 'Kompaktowy widok sesji',
         compactSessionViewDescription: 'Pokazuj aktywne sesje w bardziej zwartym układzie',
+        forceTabletMode: 'Wymuś układ tabletu',
+        forceTabletModeDescription: 'Używaj układu z bocznym panelem tabletu na mniejszych ekranach',
     },
 
     settingsFeatures: {

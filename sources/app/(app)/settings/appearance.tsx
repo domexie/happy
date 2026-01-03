@@ -32,6 +32,7 @@ export default function AppearanceSettingsScreen() {
     const [showFlavorIcons, setShowFlavorIcons] = useSettingMutable('showFlavorIcons');
     const [compactSessionView, setCompactSessionView] = useSettingMutable('compactSessionView');
     const [themePreference, setThemePreference] = useLocalSettingMutable('themePreference');
+    const [forceTabletMode, setForceTabletMode] = useLocalSettingMutable('forceTabletMode');
     const [preferredLanguage] = useSettingMutable('preferredLanguage');
     
     // Ensure we have a valid style for display, defaulting to gradient for unknown values
@@ -129,6 +130,17 @@ export default function AppearanceSettingsScreen() {
                         <Switch
                             value={compactSessionView}
                             onValueChange={setCompactSessionView}
+                        />
+                    }
+                />
+                <Item
+                    title={t('settingsAppearance.forceTabletMode')}
+                    subtitle={t('settingsAppearance.forceTabletModeDescription')}
+                    icon={<Ionicons name="tablet-landscape-outline" size={29} color="#5856D6" />}
+                    rightElement={
+                        <Switch
+                            value={forceTabletMode}
+                            onValueChange={setForceTabletMode}
                         />
                     }
                 />

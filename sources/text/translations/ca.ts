@@ -178,6 +178,8 @@ export const ca: TranslationStructure = {
         showFlavorIconsDescription: "Mostrar icones del proveïdor d'IA als avatars de sessió",
         compactSessionView: 'Vista compacta de sessions',
         compactSessionViewDescription: 'Mostra les sessions actives en un disseny més compacte',
+        forceTabletMode: 'Forçar disseny de tauleta',
+        forceTabletModeDescription: 'Utilitzar el disseny de barra lateral estil tauleta en pantalles més petites',
     },
 
     settingsFeatures: {

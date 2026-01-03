@@ -178,6 +178,8 @@ export const en = {
         showFlavorIconsDescription: 'Display AI provider icons on session avatars',
         compactSessionView: 'Compact Session View',
         compactSessionViewDescription: 'Show active sessions in a more compact layout',
+        forceTabletMode: 'Force Tablet Layout',
+        forceTabletModeDescription: 'Use tablet-style sidebar layout on smaller screens',
     },
 
     settingsFeatures: {
