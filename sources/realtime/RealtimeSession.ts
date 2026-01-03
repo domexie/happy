@@ -27,13 +27,14 @@ export async function startRealtimeSession(sessionId: string, initialContext?: s
     }
 
     const experimentsEnabled = storage.getState().settings.experiments;
-    const agentId = __DEV__ ? config.elevenLabsAgentIdDev : config.elevenLabsAgentIdProd;
-    
+    // agentId removed from config
+    const agentId = '';
+
     if (!agentId) {
         console.error('Agent ID not configured');
         return;
     }
-    
+
     try {
         // Simple path: No experiments = no auth needed
         if (!experimentsEnabled) {
@@ -46,24 +47,20 @@ export async function startRealtimeSession(sessionId: string, initialContext?: s
             });
             return;
         }
-        
+
         // Experiments enabled = full auth flow
         const credentials = await TokenStorage.getCredentials();
         if (!credentials) {
             Modal.alert(t('common.error'), t('errors.authenticationFailed'));
             return;
         }
-        
+
         const response = await fetchVoiceToken(credentials, sessionId);
         console.log('[Voice] fetchVoiceToken response:', response);
 
         if (!response.allowed) {
-            console.log('[Voice] Not allowed, presenting paywall...');
-            const result = await sync.presentPaywall();
-            console.log('[Voice] Paywall result:', result);
-            if (result.purchased) {
-                await startRealtimeSession(sessionId, initialContext);
-            }
+            console.log('[Voice] Not allowed, paywall feature removed');
+            Modal.alert(t('common.error'), 'Voice feature not available.');
             return;
         }
 

@@ -8,16 +8,14 @@ import { EmptyMessages } from '@/components/EmptyMessages';
 import { VoiceAssistantStatusBar } from '@/components/VoiceAssistantStatusBar';
 import { useDraft } from '@/hooks/useDraft';
 import { Modal } from '@/modal';
-import { voiceHooks } from '@/realtime/hooks/voiceHooks';
 import { startRealtimeSession, stopRealtimeSession } from '@/realtime/RealtimeSession';
 import { gitStatusSync } from '@/sync/gitStatusSync';
 import { sessionAbort } from '@/sync/ops';
-import { storage, useIsDataReady, useLocalSetting, useRealtimeStatus, useSessionMessages, useSessionUsage, useSetting } from '@/sync/storage';
+import { storage, useIsDataReady, useLocalSetting, useSessionMessages, useSessionUsage, useSetting } from '@/sync/storage';
 import { useSession } from '@/sync/storage';
 import { Session } from '@/sync/storageTypes';
 import { sync } from '@/sync/sync';
 import { t } from '@/text';
-import { tracking, trackMessageSent } from '@/track';
 import { isRunningOnMac } from '@/utils/platform';
 import { useDeviceType, useHeaderHeight, useIsLandscape, useIsTablet } from '@/utils/responsive';
 import { formatPathRelativeToHome, getSessionAvatarId, getSessionName, useSessionStatus } from '@/utils/sessionUtils';
@@ -40,7 +38,6 @@ export const SessionView = React.memo((props: { id: string }) => {
     const isLandscape = useIsLandscape();
     const deviceType = useDeviceType();
     const headerHeight = useHeaderHeight();
-    const realtimeStatus = useRealtimeStatus();
     const isTablet = useIsTablet();
 
     // Compute header props based on session state
@@ -119,14 +116,14 @@ export const SessionView = React.memo((props: { id: string }) => {
                         onBackPress={() => router.back()}
                     />
                     {/* Voice status bar below header - not on tablet (shown in sidebar) */}
-                    {!isTablet && realtimeStatus !== 'disconnected' && (
+                    {!isTablet && (
                         <VoiceAssistantStatusBar variant="full" />
                     )}
                 </View>
             )}
 
             {/* Content based on state */}
-            <View style={{ flex: 1, paddingTop: !(isLandscape && deviceType === 'phone') ? safeArea.top + headerHeight + (!isTablet && realtimeStatus !== 'disconnected' ? 48 : 0) : 0 }}>
+            <View style={{ flex: 1, paddingTop: !(isLandscape && deviceType === 'phone') ? safeArea.top + headerHeight : 0 }}>
                 {!isDataReady ? (
                     // Loading state
                     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -156,7 +153,6 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
     const isLandscape = useIsLandscape();
     const deviceType = useDeviceType();
     const [message, setMessage] = React.useState('');
-    const realtimeStatus = useRealtimeStatus();
     const { messages, isLoaded } = useSessionMessages(sessionId);
     const acknowledgedCliVersions = useLocalSetting('acknowledgedCliVersions');
 
@@ -206,33 +202,15 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
 
     // Handle microphone button press - memoized to prevent button flashing
     const handleMicrophonePress = React.useCallback(async () => {
-        if (realtimeStatus === 'connecting') {
-            return; // Prevent actions during transitions
-        }
-        if (realtimeStatus === 'disconnected' || realtimeStatus === 'error') {
-            try {
-                const initialPrompt = voiceHooks.onVoiceStarted(sessionId);
-                await startRealtimeSession(sessionId, initialPrompt);
-                tracking?.capture('voice_session_started', { sessionId });
-            } catch (error) {
-                console.error('Failed to start realtime session:', error);
-                Modal.alert(t('common.error'), t('errors.voiceSessionFailed'));
-                tracking?.capture('voice_session_error', { error: error instanceof Error ? error.message : 'Unknown error' });
-            }
-        } else if (realtimeStatus === 'connected') {
-            await stopRealtimeSession();
-            tracking?.capture('voice_session_stopped');
-
-            // Notify voice assistant about voice session stop
-            voiceHooks.onVoiceStopped();
-        }
-    }, [realtimeStatus, sessionId]);
+        // Voice feature disabled - realtime status removed
+        return;
+    }, [sessionId]);
 
     // Memoize mic button state to prevent flashing during chat transitions
     const micButtonState = useMemo(() => ({
         onMicPress: handleMicrophonePress,
-        isMicActive: realtimeStatus === 'connected' || realtimeStatus === 'connecting'
-    }), [handleMicrophonePress, realtimeStatus]);
+        isMicActive: false  // Voice feature disabled
+    }), [handleMicrophonePress]);
 
     // Trigger session visibility and initialize git status sync
     React.useLayoutEffect(() => {
@@ -243,7 +221,7 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
 
         // Initialize git status sync for this session
         gitStatusSync.getSync(sessionId);
-    }, [sessionId, realtimeStatus]);
+    }, [sessionId]);
 
     let content = (
         <>
@@ -284,7 +262,6 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
                     setMessage('');
                     clearDraft();
                     sync.sendMessage(sessionId, message);
-                    trackMessageSent();
                 }
             }}
             onMicPress={micButtonState.onMicPress}

@@ -7,8 +7,6 @@ import { useHeaderHeight } from '@/utils/responsive';
 import { Typography } from '@/constants/Typography';
 import { StatusDot } from './StatusDot';
 import { FABWide } from './FABWide';
-import { VoiceAssistantStatusBar } from './VoiceAssistantStatusBar';
-import { useRealtimeStatus } from '@/sync/storage';
 import { MainView } from './MainView';
 import { CollapsedSidebarView } from './CollapsedSidebarView';
 import { CollapsibleSidebarEdge } from './CollapsibleSidebarEdge';
@@ -136,7 +134,6 @@ export const SidebarView = React.memo(() => {
     const router = useRouter();
     const headerHeight = useHeaderHeight();
     const socketStatus = useSocketStatus();
-    const realtimeStatus = useRealtimeStatus();
     const friendRequests = useFriendRequests();
     const inboxHasContent = useInboxHasContent();
     const settings = useSettings();
@@ -280,9 +277,6 @@ export const SidebarView = React.memo(() => {
                         )}
                     </View>
                 </View>
-                {realtimeStatus !== 'disconnected' && (
-                    <VoiceAssistantStatusBar variant="sidebar" />
-                )}
                 <MainView variant="sidebar" />
                 <FABWide onPress={handleNewSession} />
             </View>
