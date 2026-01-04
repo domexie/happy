@@ -25,7 +25,7 @@ interface InAppNotificationContextType {
 
 const InAppNotificationContext = React.createContext<InAppNotificationContextType | null>(null);
 
-const NOTIFICATION_DURATION = 5000; // 5 seconds
+const NOTIFICATION_DURATION = 8000; // 8 seconds
 
 export const InAppNotificationProvider = React.memo(({ children }: { children: React.ReactNode }) => {
     const [currentNotification, setCurrentNotification] = React.useState<InAppNotification | null>(null);
