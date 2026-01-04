@@ -365,7 +365,15 @@ export const zhHans: TranslationStructure = {
         deleteSessionWarning: '此操作无法撤销。与此会话相关的所有消息和数据将被永久删除。',
         failedToDeleteSession: '删除会话失败',
         sessionDeleted: '会话删除成功',
-        
+
+    },
+
+    projectActions: {
+        // Used by ActiveSessionsGroupCompact context menu
+        archiveAllSessions: '归档所有会话',
+        archiveAllSessionsConfirm: ({ count }: { count: number }) =>
+            `您确定要归档此目录中的 ${count} 个会话吗？`,
+        archive: '归档',
     },
 
     components: {

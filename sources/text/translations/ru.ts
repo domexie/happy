@@ -340,6 +340,28 @@ export const ru: TranslationStructure = {
         sessionDeleted: 'Сессия успешно удалена',
     },
 
+    projectActions: {
+        // Used by ActiveSessionsGroupCompact context menu
+        archiveAllSessions: 'Архивировать все сессии',
+        archiveAllSessionsConfirm: ({ count }: { count: number }) => {
+            const n = Math.abs(count);
+            const n10 = n % 10;
+            const n100 = n % 100;
+
+            let sessionWord: string;
+            if (n10 === 1 && n100 !== 11) {
+                sessionWord = 'сессию';
+            } else if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) {
+                sessionWord = 'сессии';
+            } else {
+                sessionWord = 'сессий';
+            }
+
+            return `Вы уверены, что хотите архивировать ${count} ${sessionWord} в этой директории?`;
+        },
+        archive: 'Архивировать',
+    },
+
     components: {
         emptyMainScreen: {
             // Used by EmptyMainScreen component

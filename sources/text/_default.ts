@@ -313,6 +313,13 @@ export const en = {
         advancedFeatureFooter: "This is an advanced feature. Only change the server if you know what you're doing. You will need to log out and log in again after changing servers."
     },
 
+    projectActions: {
+        // Used by ActiveSessionsGroupCompact context menu
+        archiveAllSessions: 'Archive All Sessions',
+        archiveAllSessionsConfirm: ({ count }: { count: number }) => `Are you sure you want to archive ${count} ${count === 1 ? 'session' : 'sessions'} in this directory?`,
+        archive: 'Archive',
+    },
+
     sessionInfo: {
         // Used by Session Info screen (app/(app)/session/[id]/info.tsx)
         killSession: 'Kill Session',

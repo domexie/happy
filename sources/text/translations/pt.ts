@@ -363,7 +363,15 @@ export const pt: TranslationStructure = {
         deleteSessionWarning: 'Esta ação não pode ser desfeita. Todas as mensagens e dados associados a esta sessão serão excluídos permanentemente.',
         failedToDeleteSession: 'Falha ao excluir sessão',
         sessionDeleted: 'Sessão excluída com sucesso',
-        
+
+    },
+
+    projectActions: {
+        // Used by ActiveSessionsGroupCompact context menu
+        archiveAllSessions: 'Arquivar todas as sessões',
+        archiveAllSessionsConfirm: ({ count }: { count: number }) =>
+            `Tem certeza de que deseja arquivar ${count} ${count === 1 ? 'sessão' : 'sessões'} neste diretório?`,
+        archive: 'Arquivar',
     },
 
     components: {

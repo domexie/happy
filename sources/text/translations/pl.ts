@@ -376,6 +376,28 @@ export const pl: TranslationStructure = {
         sessionDeleted: 'Sesja została pomyślnie usunięta',
     },
 
+    projectActions: {
+        // Used by ActiveSessionsGroupCompact context menu
+        archiveAllSessions: 'Zarchiwizuj wszystkie sesje',
+        archiveAllSessionsConfirm: ({ count }: { count: number }) => {
+            const n = Math.abs(count);
+            const n10 = n % 10;
+            const n100 = n % 100;
+
+            let sessionWord: string;
+            if (n === 1) {
+                sessionWord = 'sesję';
+            } else if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) {
+                sessionWord = 'sesje';
+            } else {
+                sessionWord = 'sesji';
+            }
+
+            return `Czy na pewno chcesz zarchiwizować ${count} ${sessionWord} w tym katalogu?`;
+        },
+        archive: 'Zarchiwizuj',
+    },
+
     components: {
         emptyMainScreen: {
             // Used by EmptyMainScreen component
