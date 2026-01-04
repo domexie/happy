@@ -173,10 +173,14 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
     // Use draft hook for auto-saving message drafts
     const { clearDraft } = useDraft(sessionId, message, setMessage);
 
-    // Mark session as read when viewing
+    // Mark session as read when first viewing (only on mount, not on seq changes)
     const { markAsRead } = useSessionReadState(session);
+    const hasMarkedAsReadRef = React.useRef(false);
     React.useLayoutEffect(() => {
-        markAsRead();
+        if (!hasMarkedAsReadRef.current) {
+            hasMarkedAsReadRef.current = true;
+            markAsRead();
+        }
     }, [markAsRead]);
 
     // Handle dismissing CLI version warning
