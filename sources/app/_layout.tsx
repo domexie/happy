@@ -15,6 +15,7 @@ import { SidebarNavigator } from '@/components/SidebarNavigator';
 import sodium from '@/encryption/libsodium.lib';
 import { View, Platform } from 'react-native';
 import { ModalProvider } from '@/modal';
+import { ContextMenuProvider } from '@/components/ContextMenu';
 import { syncRestore } from '@/sync/sync';
 import { RealtimeProvider } from '@/realtime/RealtimeProvider';
 import { FaviconPermissionIndicator } from '@/components/web/FaviconPermissionIndicator';
@@ -220,13 +221,15 @@ export default function RootLayout() {
                         <ThemeProvider value={navigationTheme}>
                             <StatusBarProvider />
                             <ModalProvider>
-                                <CommandPaletteProvider>
-                                    <RealtimeProvider>
-                                        <HorizontalSafeAreaWrapper>
-                                            <SidebarNavigator />
-                                        </HorizontalSafeAreaWrapper>
-                                    </RealtimeProvider>
-                                </CommandPaletteProvider>
+                                <ContextMenuProvider>
+                                    <CommandPaletteProvider>
+                                        <RealtimeProvider>
+                                            <HorizontalSafeAreaWrapper>
+                                                <SidebarNavigator />
+                                            </HorizontalSafeAreaWrapper>
+                                        </RealtimeProvider>
+                                    </CommandPaletteProvider>
+                                </ContextMenuProvider>
                             </ModalProvider>
                         </ThemeProvider>
                     </AuthProvider>

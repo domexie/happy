@@ -18,6 +18,7 @@ import { Modal } from '@/modal';
 import { machineSpawnNewSession, sessionKill } from '@/sync/ops';
 import { isMachineOnline } from '@/utils/machineUtils';
 import { useRouter } from 'expo-router';
+import { useContextMenu, showContextMenuFromEvent, ContextMenuItem } from './ContextMenu';
 
 const stylesheet = StyleSheet.create((theme, runtime) => ({
     container: {
@@ -236,6 +237,7 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
     const machines = useAllMachines();
     const router = useRouter();
     const [collapsedPaths, setCollapsedPaths] = useLocalSettingMutable('collapsedProjectPaths');
+    const contextMenu = useContextMenu();
 
     const isCollapsed = React.useCallback((path: string) => {
         return collapsedPaths.includes(path);
@@ -257,23 +259,23 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
         return map;
     }, [machines]);
 
-    // Context menu handler for project group
-    const handleProjectContextMenu = React.useCallback((
+    // Build context menu items for project group
+    const getProjectContextMenuItems = React.useCallback((
         projectPath: string,
         projectSessions: Session[],
         machine: Machine | null,
         machineId: string
-    ) => {
+    ): ContextMenuItem[] => {
         const isOnline = machine && isMachineOnline(machine);
         const activeSessions = projectSessions.filter(s => s.active);
 
-        const buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }> = [];
+        const items: ContextMenuItem[] = [];
 
         // New session action - only if machine is online
         if (isOnline) {
-            buttons.push({
-                text: t('newSession.startNewSessionInFolder'),
-                onPress: async () => {
+            items.push({
+                label: t('newSession.startNewSessionInFolder'),
+                onSelect: async () => {
                     const result = await machineSpawnNewSession({
                         machineId,
                         directory: projectPath,
@@ -289,10 +291,10 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
 
         // Archive all sessions action - only if there are active sessions
         if (activeSessions.length > 0) {
-            buttons.push({
-                text: t('projectActions.archiveAllSessions'),
+            items.push({
+                label: t('projectActions.archiveAllSessions'),
                 style: 'destructive',
-                onPress: () => {
+                onSelect: () => {
                     Modal.alert(
                         t('projectActions.archiveAllSessions'),
                         t('projectActions.archiveAllSessionsConfirm', { count: activeSessions.length }),
@@ -313,14 +315,28 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
             });
         }
 
-        // Cancel button
-        buttons.push({ text: t('common.cancel'), style: 'cancel' });
-
-        // Only show menu if there are actions available (besides cancel)
-        if (buttons.length > 1) {
-            Modal.alert(projectPath, undefined, buttons);
-        }
+        return items;
     }, [router]);
+
+    // Show context menu for long press (native) or as fallback
+    const handleProjectLongPress = React.useCallback((
+        projectPath: string,
+        projectSessions: Session[],
+        machine: Machine | null,
+        machineId: string
+    ) => {
+        const items = getProjectContextMenuItems(projectPath, projectSessions, machine, machineId);
+        if (items.length === 0) return;
+
+        // For native platforms, use Modal.alert as fallback
+        const buttons: Array<{ text: string; style?: 'default' | 'destructive' | 'cancel'; onPress?: () => void }> = items.map(item => ({
+            text: item.label,
+            style: item.style,
+            onPress: item.onSelect
+        }));
+        buttons.push({ text: t('common.cancel'), style: 'cancel' });
+        Modal.alert(projectPath, undefined, buttons);
+    }, [getProjectContextMenuItems]);
 
     // Get all current project paths from sessions
     const currentProjectPaths = React.useMemo(() => {
@@ -425,12 +441,13 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
                 const firstMachine = firstMachineEntry?.[1]?.machine ?? null;
                 const firstMachineId = firstMachineEntry?.[0] ?? '';
 
-                // Handle right-click on web
+                // Handle right-click on web - show positioned context menu
                 const handleContextMenu = Platform.OS === 'web'
                     ? (e: GestureResponderEvent) => {
-                        e.preventDefault?.();
-                        (e as any).stopPropagation?.();
-                        handleProjectContextMenu(projectPath, allProjectSessions, firstMachine, firstMachineId);
+                        const items = getProjectContextMenuItems(projectPath, allProjectSessions, firstMachine, firstMachineId);
+                        if (items.length > 0) {
+                            showContextMenuFromEvent(e, items, contextMenu.show);
+                        }
                     }
                     : undefined;
 
@@ -440,7 +457,7 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
                         <Pressable
                             style={styles.sectionHeader}
                             onPress={() => toggleCollapsed(projectPath)}
-                            onLongPress={() => handleProjectContextMenu(projectPath, allProjectSessions, firstMachine, firstMachineId)}
+                            onLongPress={() => handleProjectLongPress(projectPath, allProjectSessions, firstMachine, firstMachineId)}
                             delayLongPress={500}
                             // @ts-ignore - onContextMenu is available on web
                             onContextMenu={handleContextMenu}
