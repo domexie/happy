@@ -176,15 +176,21 @@ const CollapsibleCard = React.memo(({ collapsed, children }: { collapsed: boolea
 
     const handleLayout = React.useCallback((event: LayoutChangeEvent) => {
         const height = event.nativeEvent.layout.height;
-        if (height > 0 && measuredHeight === 0) {
+        if (height > 0) {
             setMeasuredHeight(height);
         }
-    }, [measuredHeight]);
+    }, []);
 
     const animatedStyle = useAnimatedStyle(() => {
-        if (measuredHeight === 0) {
-            return { opacity: collapsed ? 0 : 1 };
+        // If collapsed and no height measured yet, hide completely
+        if (measuredHeight === 0 && collapsed) {
+            return { height: 0, opacity: 0, overflow: 'hidden' as const };
         }
+        // If expanded but no height measured yet, show with auto height
+        if (measuredHeight === 0) {
+            return { opacity: 1 };
+        }
+        // Normal animated state
         return {
             height: interpolate(animatedHeight.value, [0, 1], [0, measuredHeight]),
             opacity: animatedHeight.value,
@@ -192,17 +198,28 @@ const CollapsibleCard = React.memo(({ collapsed, children }: { collapsed: boolea
         };
     });
 
-    // First render: measure the content
-    if (measuredHeight === 0 && !collapsed) {
+    // Always render content but measure on layout
+    // Use opacity 0 and position absolute for initial measurement when collapsed
+    if (measuredHeight === 0 && collapsed) {
         return (
-            <View style={stylesheet.projectCard} onLayout={handleLayout}>
-                {children}
-            </View>
+            <>
+                {/* Hidden measuring container */}
+                <View
+                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
+                    onLayout={handleLayout}
+                >
+                    <View style={stylesheet.projectCard}>
+                        {children}
+                    </View>
+                </View>
+                {/* Empty placeholder with 0 height */}
+                <Animated.View style={[stylesheet.projectCard, animatedStyle]} />
+            </>
         );
     }
 
     return (
-        <Animated.View style={[stylesheet.projectCard, animatedStyle]}>
+        <Animated.View style={[stylesheet.projectCard, animatedStyle]} onLayout={measuredHeight === 0 ? handleLayout : undefined}>
             {children}
         </Animated.View>
     );
