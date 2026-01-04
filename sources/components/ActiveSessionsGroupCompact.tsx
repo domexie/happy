@@ -208,18 +208,17 @@ const CollapsibleCard = React.memo(({ collapsed, sessionCount, children }: { col
 
     return (
         <>
-            {/* Hidden container for measuring content height */}
+            {/* Hidden container for measuring content height - measures inner content only */}
             <View
                 style={{
                     position: 'absolute',
                     opacity: 0,
                     pointerEvents: 'none',
-                    left: 0,
-                    right: 0,
+                    left: Platform.select({ ios: 16, default: 12 }),
+                    right: Platform.select({ ios: 16, default: 12 }),
                 }}
-                onLayout={handleContentLayout}
             >
-                <View style={stylesheet.projectCard}>
+                <View onLayout={handleContentLayout}>
                     {children}
                 </View>
             </View>
