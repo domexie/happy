@@ -29,6 +29,7 @@ export const SettingsSchema = z.object({
     lastUsedAgent: z.string().nullable().describe('Last selected agent type for new sessions'),
     lastUsedPermissionMode: z.string().nullable().describe('Last selected permission mode for new sessions'),
     lastUsedModelMode: z.string().nullable().describe('Last selected model mode for new sessions'),
+    fullWidthChat: z.boolean().describe('Whether to use full width for chat messages'),
 });
 
 //
@@ -72,6 +73,7 @@ export const settingsDefaults: Settings = {
     lastUsedAgent: null,
     lastUsedPermissionMode: null,
     lastUsedModelMode: null,
+    fullWidthChat: false,
 };
 Object.freeze(settingsDefaults);
 

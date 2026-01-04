@@ -180,6 +180,8 @@ export const zhHans: TranslationStructure = {
         showFlavorIconsDescription: '在会话头像上显示 AI 提供商图标',
         compactSessionView: '紧凑会话视图',
         compactSessionViewDescription: '以更紧凑的布局显示活跃会话',
+        fullWidthChat: '全宽聊天',
+        fullWidthChatDescription: '在大屏幕上使用全屏宽度显示聊天消息',
         forceTabletMode: '强制平板布局',
         forceTabletModeDescription: '在较小屏幕上使用平板风格的侧边栏布局',
     },

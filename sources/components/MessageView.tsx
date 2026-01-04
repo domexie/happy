@@ -6,6 +6,7 @@ import { t } from '@/text';
 import { Message, UserTextMessage, AgentTextMessage, ToolCallMessage } from "@/sync/typesMessage";
 import { Metadata } from "@/sync/storageTypes";
 import { layout } from "./layout";
+import { useSetting } from "@/sync/storage";
 import { ToolView } from "./tools/ToolView";
 import { AgentEvent } from "@/sync/typesRaw";
 import { sync } from '@/sync/sync';
@@ -17,9 +18,14 @@ export const MessageView = (props: {
   sessionId: string;
   getMessageById?: (id: string) => Message | null;
 }) => {
+  const fullWidthChat = useSetting('fullWidthChat');
+
   return (
     <View style={styles.messageContainer} renderToHardwareTextureAndroid={true}>
-      <View style={styles.messageContent}>
+      <View style={[
+        styles.messageContent,
+        fullWidthChat && { maxWidth: undefined, paddingHorizontal: 16 }
+      ]}>
         <RenderBlock
           message={props.message}
           metadata={props.metadata}

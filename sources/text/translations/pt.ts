@@ -178,6 +178,8 @@ export const pt: TranslationStructure = {
         showFlavorIconsDescription: 'Exibir ícones do provedor de IA nos avatares de sessão',
         compactSessionView: 'Visualização compacta de sessões',
         compactSessionViewDescription: 'Mostrar sessões ativas em um layout mais compacto',
+        fullWidthChat: 'Chat em largura total',
+        fullWidthChatDescription: 'Usar a largura total da tela para mensagens de chat em telas grandes',
         forceTabletMode: 'Forçar layout de tablet',
         forceTabletModeDescription: 'Usar layout de barra lateral estilo tablet em telas menores',
     },

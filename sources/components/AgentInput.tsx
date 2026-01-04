@@ -287,6 +287,7 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
     const styles = stylesheet;
     const { theme } = useUnistyles();
     const screenWidth = useWindowDimensions().width;
+    const fullWidthChat = useSetting('fullWidthChat');
 
     const hasText = props.value.trim().length > 0;
     
@@ -469,7 +470,7 @@ export const AgentInput = React.memo(React.forwardRef<MultiTextInputHandle, Agen
         ]}>
             <View style={[
                 styles.innerContainer,
-                { maxWidth: layout.maxWidth }
+                { maxWidth: fullWidthChat ? undefined : layout.maxWidth }
             ]}>
                 {/* Autocomplete suggestions overlay */}
                 {suggestions.length > 0 && (
