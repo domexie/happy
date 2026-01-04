@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Platform }
 import { Ionicons } from '@expo/vector-icons';
 import { sessionAllow, sessionDeny } from '@/sync/ops';
 import { useUnistyles } from 'react-native-unistyles';
-import { storage } from '@/sync/storage';
+import { storage, useSession } from '@/sync/storage';
 import { t } from '@/text';
 
 interface PermissionFooterProps {
@@ -26,7 +26,11 @@ export const PermissionFooter: React.FC<PermissionFooterProps> = ({ permission, 
     const [loadingButton, setLoadingButton] = useState<'allow' | 'deny' | 'abort' | null>(null);
     const [loadingAllEdits, setLoadingAllEdits] = useState(false);
     const [loadingForSession, setLoadingForSession] = useState(false);
-    
+
+    // Get current session's permission mode to preserve it when approving
+    const session = useSession(sessionId);
+    const currentPermissionMode = session?.permissionMode || 'default';
+
     // Check if this is a Codex session - check both metadata.flavor and tool name prefix
     const isCodex = metadata?.flavor === 'codex' || toolName.startsWith('Codex');
 
@@ -35,7 +39,13 @@ export const PermissionFooter: React.FC<PermissionFooterProps> = ({ permission, 
 
         setLoadingButton('allow');
         try {
-            await sessionAllow(sessionId, permission.id);
+            // Pass current permission mode to preserve acceptEdits/bypassPermissions/plan state
+            // Only pass mode for Claude sessions (not Codex modes like yolo, safe-yolo, read-only)
+            const claudeModes = ['acceptEdits', 'bypassPermissions', 'plan'] as const;
+            const modeToSend = claudeModes.includes(currentPermissionMode as any)
+                ? currentPermissionMode as 'acceptEdits' | 'bypassPermissions' | 'plan'
+                : undefined;
+            await sessionAllow(sessionId, permission.id, modeToSend);
         } catch (error) {
             console.error('Failed to approve permission:', error);
         } finally {
@@ -69,8 +79,13 @@ export const PermissionFooter: React.FC<PermissionFooterProps> = ({ permission, 
                 const command = toolInput.command;
                 toolIdentifier = `Bash(${command})`;
             }
-            
-            await sessionAllow(sessionId, permission.id, undefined, [toolIdentifier]);
+
+            // Pass current permission mode to preserve acceptEdits/bypassPermissions/plan state
+            const claudeModes = ['acceptEdits', 'bypassPermissions', 'plan'] as const;
+            const modeToSend = claudeModes.includes(currentPermissionMode as any)
+                ? currentPermissionMode as 'acceptEdits' | 'bypassPermissions' | 'plan'
+                : undefined;
+            await sessionAllow(sessionId, permission.id, modeToSend, [toolIdentifier]);
         } catch (error) {
             console.error('Failed to approve for session:', error);
         } finally {
