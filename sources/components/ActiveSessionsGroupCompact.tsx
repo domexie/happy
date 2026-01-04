@@ -13,6 +13,7 @@ import { t } from '@/text';
 import { useNavigateToSession } from '@/hooks/useNavigateToSession';
 import { useIsTablet } from '@/utils/responsive';
 import { ProjectGitStatus } from './ProjectGitStatus';
+import { useSessionHasUnread } from '@/hooks/useSessionReadState';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from 'react-native-reanimated';
 import { Modal } from '@/modal';
 import { machineSpawnNewSession, sessionKill } from '@/sync/ops';
@@ -517,6 +518,7 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
     const sessionName = getSessionName(session);
     const navigateToSession = useNavigateToSession();
     const isTablet = useIsTablet();
+    const hasUnread = useSessionHasUnread(session);
     const contextMenu = useContextMenu();
 
     // Build context menu items for session
@@ -614,34 +616,34 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
                                 />
                             );
                         }
-                        
+
                         // Show status dot only for permission_required/thinking states
                         if (sessionStatus.state === 'permission_required' || sessionStatus.state === 'thinking') {
                             return (
                                 <View style={[styles.statusDotContainer, { marginRight: 8 }]}>
-                                    <StatusDot 
-                                        color={sessionStatus.statusDotColor} 
-                                        isPulsing={sessionStatus.isPulsing} 
+                                    <StatusDot
+                                        color={sessionStatus.statusDotColor}
+                                        isPulsing={sessionStatus.isPulsing}
                                     />
                                 </View>
                             );
                         }
-                        
-                        // Show grey dot for online without draft
+
+                        // Show green dot for unread, grey for read (when online without draft)
                         if (sessionStatus.state === 'waiting') {
                             return (
                                 <View style={[styles.statusDotContainer, { marginRight: 8 }]}>
-                                    <StatusDot 
-                                        color={theme.colors.textSecondary} 
-                                        isPulsing={false} 
+                                    <StatusDot
+                                        color={hasUnread ? '#34C759' : theme.colors.textSecondary}
+                                        isPulsing={false}
                                     />
                                 </View>
                             );
                         }
-                        
+
                         return null;
                     })()}
-                    
+
                     <Text
                         style={[
                             styles.sessionTitle,

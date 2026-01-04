@@ -128,6 +128,23 @@ export function saveSessionPermissionModes(modes: Record<string, PermissionMode>
     mmkv.set('session-permission-modes', JSON.stringify(modes));
 }
 
+export function loadSessionLastReadSeqs(): Record<string, number> {
+    const seqs = mmkv.getString('session-last-read-seqs');
+    if (seqs) {
+        try {
+            return JSON.parse(seqs);
+        } catch (e) {
+            console.error('Failed to parse session last read seqs', e);
+            return {};
+        }
+    }
+    return {};
+}
+
+export function saveSessionLastReadSeqs(seqs: Record<string, number>) {
+    mmkv.set('session-last-read-seqs', JSON.stringify(seqs));
+}
+
 export function loadProfile(): Profile {
     const profile = mmkv.getString('profile');
     if (profile) {
