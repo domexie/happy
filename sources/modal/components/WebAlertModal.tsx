@@ -69,10 +69,10 @@ export function WebAlertModal({ config, onClose, onConfirm }: WebAlertModalProps
         buttonContainer: {
             borderTopWidth: 1,
             borderTopColor: theme.colors.divider,
-            flexDirection: 'row'
+            flexDirection: buttons.length > 2 ? 'column' : 'row'
         },
         button: {
-            flex: 1,
+            flex: buttons.length > 2 ? undefined : 1,
             paddingVertical: 11,
             alignItems: 'center',
             justifyContent: 'center'
@@ -81,7 +81,8 @@ export function WebAlertModal({ config, onClose, onConfirm }: WebAlertModalProps
             backgroundColor: theme.colors.divider
         },
         buttonSeparator: {
-            width: 1,
+            width: buttons.length > 2 ? undefined : 1,
+            height: buttons.length > 2 ? 1 : undefined,
             backgroundColor: theme.colors.divider
         },
         buttonText: {
