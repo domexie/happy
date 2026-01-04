@@ -19,6 +19,8 @@ export const LocalSettingsSchema = z.object({
     forceTabletMode: z.boolean().describe('Force tablet layout on phones and small screen devices'),
     // Last viewed session ID for context-aware new session defaults
     lastViewedSessionId: z.string().nullable().describe('ID of the last viewed session, used to pre-fill machine/path when creating new sessions'),
+    // Collapsed project paths in compact session view (accordion state)
+    collapsedProjectPaths: z.array(z.string()).describe('Project paths that are collapsed in compact session view'),
 });
 
 //
@@ -44,6 +46,7 @@ export const localSettingsDefaults: LocalSettings = {
     sidebarCollapsed: false,
     forceTabletMode: false,
     lastViewedSessionId: null,
+    collapsedProjectPaths: [],
 };
 Object.freeze(localSettingsDefaults);
 
