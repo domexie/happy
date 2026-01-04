@@ -863,6 +863,16 @@ export const en = {
         friendRequestGeneric: 'New friend request',
         friendAccepted: ({ name }: { name: string }) => `You are now friends with ${name}`,
         friendAcceptedGeneric: 'Friend request accepted',
+    },
+
+    webNotifications: {
+        // Web push notification strings
+        permissionRequired: 'Permission Required',
+        permissionBody: ({ sessionName, toolName }: { sessionName: string; toolName: string }) =>
+            `Session ${sessionName} needs approval for ${toolName}`,
+        sessionReady: 'Session Ready',
+        sessionReadyBody: ({ sessionName }: { sessionName: string }) =>
+            `${sessionName} is waiting for your command`,
     }
 } as const;
 

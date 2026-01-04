@@ -886,6 +886,16 @@ export const pl: TranslationStructure = {
         friendRequestGeneric: 'Nowe zaproszenie do znajomych',
         friendAccepted: ({ name }: { name: string }) => `Jesteś teraz znajomym z ${name}`,
         friendAcceptedGeneric: 'Zaproszenie do znajomych zaakceptowane',
+    },
+
+    webNotifications: {
+        // Web push notification strings
+        permissionRequired: 'Wymagane uprawnienie',
+        permissionBody: ({ sessionName, toolName }: { sessionName: string; toolName: string }) =>
+            `Sesja ${sessionName} wymaga zatwierdzenia dla ${toolName}`,
+        sessionReady: 'Sesja gotowa',
+        sessionReadyBody: ({ sessionName }: { sessionName: string }) =>
+            `${sessionName} czeka na Twoje polecenie`,
     }
 } as const;
 

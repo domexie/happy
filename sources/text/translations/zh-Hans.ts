@@ -864,5 +864,15 @@ export const zhHans: TranslationStructure = {
         friendRequestGeneric: '新的好友请求',
         friendAccepted: ({ name }: { name: string }) => `您现在与 ${name} 成为了好友`,
         friendAcceptedGeneric: '好友请求已接受',
+    },
+
+    webNotifications: {
+        // Web push notification strings
+        permissionRequired: '需要权限',
+        permissionBody: ({ sessionName, toolName }: { sessionName: string; toolName: string }) =>
+            `会话 ${sessionName} 需要批准 ${toolName}`,
+        sessionReady: '会话就绪',
+        sessionReadyBody: ({ sessionName }: { sessionName: string }) =>
+            `${sessionName} 正在等待您的指令`,
     }
 } as const;

@@ -862,6 +862,16 @@ export const ca: TranslationStructure = {
         friendRequestGeneric: 'Nova sol·licitud d\'amistat',
         friendAccepted: ({ name }: { name: string }) => `Ara ets amic de ${name}`,
         friendAcceptedGeneric: 'Sol·licitud d\'amistat acceptada',
+    },
+
+    webNotifications: {
+        // Web push notification strings
+        permissionRequired: 'Permís Requerit',
+        permissionBody: ({ sessionName, toolName }: { sessionName: string; toolName: string }) =>
+            `La sessió ${sessionName} necessita aprovació per a ${toolName}`,
+        sessionReady: 'Sessió Preparada',
+        sessionReadyBody: ({ sessionName }: { sessionName: string }) =>
+            `${sessionName} està esperant la teva comanda`,
     }
 } as const;
 

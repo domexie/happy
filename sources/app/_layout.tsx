@@ -19,6 +19,7 @@ import { ModalProvider } from '@/modal';
 import { syncRestore } from '@/sync/sync';
 import { RealtimeProvider } from '@/realtime/RealtimeProvider';
 import { FaviconPermissionIndicator } from '@/components/web/FaviconPermissionIndicator';
+import { WebNotificationHandler } from '@/components/web/WebNotificationHandler';
 import { CommandPaletteProvider } from '@/components/CommandPalette/CommandPaletteProvider';
 import { StatusBarProvider } from '@/components/StatusBarProvider';
 // import * as SystemUI from 'expo-system-ui';
@@ -223,6 +224,7 @@ export default function RootLayout() {
                             <ModalProvider>
                                 <CommandPaletteProvider>
                                     <RealtimeProvider>
+                                        <WebNotificationHandler />
                                         <SidebarProvider>
                                             <HorizontalSafeAreaWrapper>
                                                 <SidebarNavigator />
