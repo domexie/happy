@@ -175,10 +175,10 @@ const styles = StyleSheet.create((theme) => ({
     container: {
         position: 'absolute',
         borderRadius: 12,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 8,
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.25,
+        shadowRadius: 24,
+        elevation: 12,
         zIndex: 1000,
     },
     toast: {
