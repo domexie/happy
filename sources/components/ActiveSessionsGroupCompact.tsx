@@ -165,77 +165,69 @@ const AnimatedChevron = React.memo(({ collapsed, color }: { collapsed: boolean; 
 // Collapsible container with height animation
 // sessionCount is used to trigger re-measurement when content changes
 const CollapsibleCard = React.memo(({ collapsed, sessionCount, children }: { collapsed: boolean; sessionCount: number; children: React.ReactNode }) => {
-    const [measuredHeight, setMeasuredHeight] = React.useState(0);
+    const [contentHeight, setContentHeight] = React.useState(0);
     const animatedHeight = useSharedValue(collapsed ? 0 : 1);
-    const hasInitialized = React.useRef(false);
-    const lastSessionCount = React.useRef(sessionCount);
+    const isFirstRender = React.useRef(true);
 
-    // Reset measured height when session count changes to trigger re-measurement
+    // Handle collapse/expand animation
     React.useEffect(() => {
-        if (lastSessionCount.current !== sessionCount) {
-            lastSessionCount.current = sessionCount;
-            setMeasuredHeight(0);
-        }
-    }, [sessionCount]);
-
-    React.useEffect(() => {
-        // Skip animation on initial render if already collapsed
-        if (!hasInitialized.current) {
-            hasInitialized.current = true;
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            // Set initial value without animation
             animatedHeight.value = collapsed ? 0 : 1;
             return;
         }
+        // Animate to new state
         animatedHeight.value = withTiming(collapsed ? 0 : 1, { duration: 200 });
     }, [collapsed, animatedHeight]);
 
-    const handleLayout = React.useCallback((event: LayoutChangeEvent) => {
+    // Measure content height whenever it changes
+    const handleContentLayout = React.useCallback((event: LayoutChangeEvent) => {
         const height = event.nativeEvent.layout.height;
-        if (height > 0) {
-            setMeasuredHeight(height);
+        if (height > 0 && height !== contentHeight) {
+            setContentHeight(height);
         }
-    }, []);
+    }, [contentHeight]);
 
     const animatedStyle = useAnimatedStyle(() => {
-        // If collapsed and no height measured yet, hide completely
-        if (measuredHeight === 0 && collapsed) {
-            return { height: 0, opacity: 0, overflow: 'hidden' as const };
+        // No height measured yet - use auto height when expanded, 0 when collapsed
+        if (contentHeight === 0) {
+            if (collapsed) {
+                return { height: 0, opacity: 0, overflow: 'hidden' as const };
+            }
+            return {};
         }
-        // If expanded but no height measured yet, show with auto height
-        if (measuredHeight === 0) {
-            return { opacity: 1 };
-        }
-        // Normal animated state
+        // Animate between 0 and measured height
+        const height = interpolate(animatedHeight.value, [0, 1], [0, contentHeight]);
         return {
-            height: interpolate(animatedHeight.value, [0, 1], [0, measuredHeight]),
-            opacity: animatedHeight.value,
+            height,
+            opacity: interpolate(animatedHeight.value, [0, 0.3, 1], [0, 1, 1]),
             overflow: 'hidden' as const,
         };
     });
 
-    // Always render content but measure on layout
-    // Use opacity 0 and position absolute for initial measurement when collapsed
-    if (measuredHeight === 0 && collapsed) {
-        return (
-            <>
-                {/* Hidden measuring container */}
-                <View
-                    style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
-                    onLayout={handleLayout}
-                >
-                    <View style={stylesheet.projectCard}>
-                        {children}
-                    </View>
-                </View>
-                {/* Empty placeholder with 0 height */}
-                <Animated.View style={[stylesheet.projectCard, animatedStyle]} />
-            </>
-        );
-    }
-
     return (
-        <Animated.View style={[stylesheet.projectCard, animatedStyle]} onLayout={handleLayout}>
-            {children}
-        </Animated.View>
+        <>
+            {/* Hidden container for measuring content height */}
+            <View
+                style={{
+                    position: 'absolute',
+                    opacity: 0,
+                    pointerEvents: 'none',
+                    left: 0,
+                    right: 0,
+                }}
+                onLayout={handleContentLayout}
+            >
+                <View style={stylesheet.projectCard}>
+                    {children}
+                </View>
+            </View>
+            {/* Visible animated container */}
+            <Animated.View style={[stylesheet.projectCard, animatedStyle]}>
+                {children}
+            </Animated.View>
+        </>
     );
 });
 
