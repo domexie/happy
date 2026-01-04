@@ -516,6 +516,62 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
     const sessionName = getSessionName(session);
     const navigateToSession = useNavigateToSession();
     const isTablet = useIsTablet();
+    const contextMenu = useContextMenu();
+
+    // Build context menu items for session
+    const getSessionContextMenuItems = React.useCallback((): ContextMenuItem[] => {
+        const items: ContextMenuItem[] = [];
+
+        // Archive session action - only if session is active
+        if (session.active) {
+            items.push({
+                label: t('sessionInfo.archiveSession'),
+                style: 'destructive',
+                onSelect: () => {
+                    Modal.alert(
+                        t('sessionInfo.archiveSession'),
+                        t('sessionInfo.archiveSessionConfirm'),
+                        [
+                            { text: t('common.cancel'), style: 'cancel' },
+                            {
+                                text: t('projectActions.archive'),
+                                style: 'destructive',
+                                onPress: async () => {
+                                    await sessionKill(session.id);
+                                }
+                            }
+                        ]
+                    );
+                }
+            });
+        }
+
+        return items;
+    }, [session.id, session.active]);
+
+    // Handle right-click on web
+    const handleContextMenu = Platform.OS === 'web'
+        ? (e: GestureResponderEvent) => {
+            const items = getSessionContextMenuItems();
+            if (items.length > 0) {
+                showContextMenuFromEvent(e, items, contextMenu.show);
+            }
+        }
+        : undefined;
+
+    // Handle long press on native
+    const handleLongPress = React.useCallback(() => {
+        const items = getSessionContextMenuItems();
+        if (items.length === 0) return;
+
+        const buttons: Array<{ text: string; style?: 'default' | 'destructive' | 'cancel'; onPress?: () => void }> = items.map(item => ({
+            text: item.label,
+            style: item.style,
+            onPress: item.onSelect
+        }));
+        buttons.push({ text: t('common.cancel'), style: 'cancel' });
+        Modal.alert(sessionName, undefined, buttons);
+    }, [getSessionContextMenuItems, sessionName]);
 
     return (
         <Pressable
@@ -534,6 +590,10 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
                     navigateToSession(session.id);
                 }
             }}
+            onLongPress={handleLongPress}
+            delayLongPress={500}
+            // @ts-ignore - onContextMenu is available on web
+            onContextMenu={handleContextMenu}
         >
             <View style={styles.sessionContent}>
                 {/* Title line with status */}
