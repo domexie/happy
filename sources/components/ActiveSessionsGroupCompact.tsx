@@ -636,6 +636,7 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
                                     <StatusDot
                                         color={hasUnread ? '#34C759' : theme.colors.textSecondary}
                                         isPulsing={false}
+                                        baseOpacity={hasUnread ? 1 : 0.2}
                                     />
                                 </View>
                             );

@@ -7,22 +7,26 @@ export interface StatusDotProps {
     isPulsing?: boolean;
     size?: number;
     style?: ViewStyle;
+    /** Base opacity for the dot (default: 1). Pulsing animation will animate from this value to 0.3 */
+    baseOpacity?: number;
 }
 
-export const StatusDot = React.memo(({ color, isPulsing, size = 6, style }: StatusDotProps) => {
-    const opacity = useSharedValue(1);
+export const StatusDot = React.memo(({ color, isPulsing, size = 6, style, baseOpacity = 1 }: StatusDotProps) => {
+    const opacity = useSharedValue(baseOpacity);
 
     React.useEffect(() => {
         if (isPulsing) {
+            // Reset to full opacity before starting pulse animation
+            opacity.value = 1;
             opacity.value = withRepeat(
                 withTiming(0.3, { duration: 1000 }),
                 -1, // infinite
                 true // reverse
             );
         } else {
-            opacity.value = withTiming(1, { duration: 200 });
+            opacity.value = withTiming(baseOpacity, { duration: 200 });
         }
-    }, [isPulsing]);
+    }, [isPulsing, baseOpacity]);
 
     const animatedStyle = useAnimatedStyle(() => {
         return {
