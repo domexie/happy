@@ -10,7 +10,7 @@ import { useDraft } from '@/hooks/useDraft';
 import { Modal } from '@/modal';
 import { startRealtimeSession, stopRealtimeSession } from '@/realtime/RealtimeSession';
 import { gitStatusSync } from '@/sync/gitStatusSync';
-import { sessionAbort } from '@/sync/ops';
+import { sessionAbort, sessionKill } from '@/sync/ops';
 import { storage, useIsDataReady, useLocalSetting, useSessionMessages, useSessionUsage, useSetting } from '@/sync/storage';
 import { useSession } from '@/sync/storage';
 import { Session } from '@/sync/storageTypes';
@@ -20,10 +20,12 @@ import { isRunningOnMac } from '@/utils/platform';
 import { useDeviceType, useHeaderHeight, useIsLandscape, useIsTablet } from '@/utils/responsive';
 import { formatPathRelativeToHome, getSessionAvatarId, getSessionName, useSessionStatus } from '@/utils/sessionUtils';
 import { isVersionSupported, MINIMUM_CLI_VERSION } from '@/utils/versionUtils';
+import { useHappyAction } from '@/hooks/useHappyAction';
+import { HappyError } from '@/utils/errors';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useUnistyles } from 'react-native-unistyles';
@@ -40,6 +42,30 @@ export const SessionView = React.memo((props: { id: string }) => {
     const headerHeight = useHeaderHeight();
     const isTablet = useIsTablet();
 
+    // Archive session handler
+    const [, performArchive] = useHappyAction(useCallback(async () => {
+        const result = await sessionKill(sessionId);
+        if (!result.success) {
+            throw new HappyError(result.message || t('sessionInfo.failedToArchiveSession'), false);
+        }
+        router.back();
+    }, [sessionId, router]));
+
+    const handleArchivePress = useCallback(() => {
+        Modal.alert(
+            t('sessionInfo.archiveSession'),
+            t('sessionInfo.archiveSessionConfirm'),
+            [
+                { text: t('common.cancel'), style: 'cancel' },
+                {
+                    text: t('sessionInfo.archiveSession'),
+                    style: 'destructive',
+                    onPress: performArchive
+                }
+            ]
+        );
+    }, [performArchive]);
+
     // Compute header props based on session state
     const headerProps = useMemo(() => {
         if (!isDataReady) {
@@ -49,6 +75,7 @@ export const SessionView = React.memo((props: { id: string }) => {
                 subtitle: undefined,
                 avatarId: undefined,
                 onAvatarPress: undefined,
+                onArchivePress: undefined,
                 isConnected: false,
                 flavor: null
             };
@@ -61,6 +88,7 @@ export const SessionView = React.memo((props: { id: string }) => {
                 subtitle: undefined,
                 avatarId: undefined,
                 onAvatarPress: undefined,
+                onArchivePress: undefined,
                 isConnected: false,
                 flavor: null
             };
@@ -73,11 +101,11 @@ export const SessionView = React.memo((props: { id: string }) => {
             subtitle: session.metadata?.path ? formatPathRelativeToHome(session.metadata.path, session.metadata?.homeDir) : undefined,
             avatarId: getSessionAvatarId(session),
             onAvatarPress: () => router.push(`/session/${sessionId}/info`),
+            onArchivePress: isConnected ? handleArchivePress : undefined,
             isConnected: isConnected,
-            flavor: session.metadata?.flavor || null,
-            tintColor: isConnected ? '#000' : '#8E8E93'
+            flavor: session.metadata?.flavor || null
         };
-    }, [session, isDataReady, sessionId, router]);
+    }, [session, isDataReady, sessionId, router, handleArchivePress]);
 
     return (
         <>
