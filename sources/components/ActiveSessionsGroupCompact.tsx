@@ -318,25 +318,26 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
         return items;
     }, [router]);
 
-    // Show context menu for long press (native) or as fallback
-    const handleProjectLongPress = React.useCallback((
-        projectPath: string,
-        projectSessions: Session[],
-        machine: Machine | null,
-        machineId: string
-    ) => {
-        const items = getProjectContextMenuItems(projectPath, projectSessions, machine, machineId);
-        if (items.length === 0) return;
+    // Show context menu for long press - only on native platforms, web uses onContextMenu
+    const handleProjectLongPress = Platform.OS !== 'web'
+        ? (
+            projectPath: string,
+            projectSessions: Session[],
+            machine: Machine | null,
+            machineId: string
+        ) => {
+            const items = getProjectContextMenuItems(projectPath, projectSessions, machine, machineId);
+            if (items.length === 0) return;
 
-        // For native platforms, use Modal.alert as fallback
-        const buttons: Array<{ text: string; style?: 'default' | 'destructive' | 'cancel'; onPress?: () => void }> = items.map(item => ({
-            text: item.label,
-            style: item.style,
-            onPress: item.onSelect
-        }));
-        buttons.push({ text: t('common.cancel'), style: 'cancel' });
-        Modal.alert(projectPath, undefined, buttons);
-    }, [getProjectContextMenuItems]);
+            const buttons: Array<{ text: string; style?: 'default' | 'destructive' | 'cancel'; onPress?: () => void }> = items.map(item => ({
+                text: item.label,
+                style: item.style,
+                onPress: item.onSelect
+            }));
+            buttons.push({ text: t('common.cancel'), style: 'cancel' });
+            Modal.alert(projectPath, undefined, buttons);
+        }
+        : undefined;
 
     // Get all current project paths from sessions
     const currentProjectPaths = React.useMemo(() => {
@@ -457,7 +458,7 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
                         <Pressable
                             style={styles.sectionHeader}
                             onPress={() => toggleCollapsed(projectPath)}
-                            onLongPress={() => handleProjectLongPress(projectPath, allProjectSessions, firstMachine, firstMachineId)}
+                            onLongPress={handleProjectLongPress ? () => handleProjectLongPress(projectPath, allProjectSessions, firstMachine, firstMachineId) : undefined}
                             delayLongPress={500}
                             // @ts-ignore - onContextMenu is available on web
                             onContextMenu={handleContextMenu}
@@ -559,19 +560,21 @@ const CompactSessionRow = React.memo(({ session, selected, showBorder }: { sessi
         }
         : undefined;
 
-    // Handle long press on native
-    const handleLongPress = React.useCallback(() => {
-        const items = getSessionContextMenuItems();
-        if (items.length === 0) return;
+    // Handle long press on native only - web uses onContextMenu
+    const handleLongPress = Platform.OS !== 'web'
+        ? () => {
+            const items = getSessionContextMenuItems();
+            if (items.length === 0) return;
 
-        const buttons: Array<{ text: string; style?: 'default' | 'destructive' | 'cancel'; onPress?: () => void }> = items.map(item => ({
-            text: item.label,
-            style: item.style,
-            onPress: item.onSelect
-        }));
-        buttons.push({ text: t('common.cancel'), style: 'cancel' });
-        Modal.alert(sessionName, undefined, buttons);
-    }, [getSessionContextMenuItems, sessionName]);
+            const buttons: Array<{ text: string; style?: 'default' | 'destructive' | 'cancel'; onPress?: () => void }> = items.map(item => ({
+                text: item.label,
+                style: item.style,
+                onPress: item.onSelect
+            }));
+            buttons.push({ text: t('common.cancel'), style: 'cancel' });
+            Modal.alert(sessionName, undefined, buttons);
+        }
+        : undefined;
 
     return (
         <Pressable

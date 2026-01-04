@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
-import { View, Text, Pressable, Platform, StyleSheet as RNStyleSheet } from 'react-native';
+import { View, Text, Pressable, Platform, StyleSheet as RNStyleSheet, Dimensions } from 'react-native';
 import { Typography } from '@/constants/Typography';
 import { useUnistyles } from 'react-native-unistyles';
+import { t } from '@/text';
 
 // Context menu item definition
 export interface ContextMenuItem {
