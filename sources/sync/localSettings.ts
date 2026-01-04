@@ -13,6 +13,8 @@ export const LocalSettingsSchema = z.object({
     markdownCopyV2: z.boolean().describe('Replace native paragraph selection with long-press modal for full markdown copy'),
     // CLI version acknowledgments - keyed by machineId
     acknowledgedCliVersions: z.record(z.string(), z.string()).describe('Acknowledged CLI versions per machine'),
+    // Last viewed session ID for context-aware new session defaults
+    lastViewedSessionId: z.string().nullable().describe('ID of the last viewed session, used to pre-fill machine/path when creating new sessions'),
 });
 
 //
@@ -35,6 +37,7 @@ export const localSettingsDefaults: LocalSettings = {
     themePreference: 'adaptive',
     markdownCopyV2: false,
     acknowledgedCliVersions: {},
+    lastViewedSessionId: null,
 };
 Object.freeze(localSettingsDefaults);
 

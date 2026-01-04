@@ -121,30 +121,67 @@ function NewSessionScreen() {
     //
 
     const machines = useAllMachines();
+
+    // Helper function to get last viewed session context directly from storage
+    // This avoids issues with hooks not being available during initial state computation
+    const getLastViewedSessionContext = React.useCallback(() => {
+        const state = storage.getState();
+        const lastViewedId = state.localSettings.lastViewedSessionId;
+        if (!lastViewedId) return null;
+        const session = state.sessions[lastViewedId];
+        if (!session?.metadata?.machineId || !session?.metadata?.path) return null;
+        return {
+            machineId: session.metadata.machineId,
+            path: session.metadata.path
+        };
+    }, []);
+
     const [selectedMachineId, setSelectedMachineId] = React.useState<string | null>(() => {
-        if (machines.length > 0) {
-            // Check if we have a recently used machine that's currently available
+        const state = storage.getState();
+        const availableMachines = Object.values(state.machines).filter(m => m.active);
+        const lastViewedContext = getLastViewedSessionContext();
+
+        // Priority 1: Use the machine from last viewed session if available
+        if (lastViewedContext?.machineId) {
+            if (availableMachines.find(m => m.id === lastViewedContext.machineId)) {
+                return lastViewedContext.machineId;
+            }
+        }
+
+        if (availableMachines.length > 0) {
+            // Priority 2: Check if we have a recently used machine that's currently available
             if (recentMachinePaths.length > 0) {
                 // Find the first machine from recent paths that's currently available
                 for (const recent of recentMachinePaths) {
-                    if (machines.find(m => m.id === recent.machineId)) {
+                    if (availableMachines.find(m => m.id === recent.machineId)) {
                         return recent.machineId;
                     }
                 }
             }
             // Fallback to first machine if no recent machine is available
-            return machines[0].id;
+            return availableMachines[0].id;
         }
         return null;
     });
     React.useEffect(() => {
         if (machines.length > 0) {
-            if (!selectedMachineId) {
-                // No machine selected yet, prefer the most recently used machine
-                let machineToSelect = machines[0].id; // Default to first machine
+            const lastViewedContext = getLastViewedSessionContext();
 
-                // Check if we have a recently used machine that's currently available
-                if (recentMachinePaths.length > 0) {
+            if (!selectedMachineId) {
+                // No machine selected yet
+                let machineToSelect = machines[0].id; // Default to first machine
+                let pathToSelect: string | null = null;
+
+                // Priority 1: Use the machine from last viewed session if available
+                if (lastViewedContext?.machineId) {
+                    if (machines.find(m => m.id === lastViewedContext.machineId)) {
+                        machineToSelect = lastViewedContext.machineId;
+                        pathToSelect = lastViewedContext.path;
+                    }
+                }
+
+                // Priority 2: Check if we have a recently used machine that's currently available
+                if (!pathToSelect && recentMachinePaths.length > 0) {
                     for (const recent of recentMachinePaths) {
                         if (machines.find(m => m.id === recent.machineId)) {
                             machineToSelect = recent.machineId;
@@ -154,27 +191,38 @@ function NewSessionScreen() {
                 }
 
                 setSelectedMachineId(machineToSelect);
-                // Also set the best path for the selected machine
-                const bestPath = getRecentPathForMachine(machineToSelect, recentMachinePaths);
+                // Set the path - prefer lastViewedContext path, fallback to recent path
+                const bestPath = pathToSelect || getRecentPathForMachine(machineToSelect, recentMachinePaths);
                 setSelectedPath(bestPath);
             } else {
                 // Machine is already selected, but check if we need to update path
                 // This handles the case where machines load after initial render
                 const currentMachine = machines.find(m => m.id === selectedMachineId);
                 if (currentMachine) {
-                    // Update path based on recent paths (only if path hasn't been manually changed)
-                    const bestPath = getRecentPathForMachine(selectedMachineId, recentMachinePaths);
-                    setSelectedPath(prevPath => {
-                        // Only update if current path is the default /home/
-                        if (prevPath === '/home/' && bestPath !== '/home/') {
-                            return bestPath;
-                        }
-                        return prevPath;
-                    });
+                    // If we have context from last viewed session and it matches the selected machine, use its path
+                    if (lastViewedContext?.machineId === selectedMachineId && lastViewedContext.path) {
+                        setSelectedPath(prevPath => {
+                            // Only update if current path is the default /home/
+                            if (prevPath === '/home/') {
+                                return lastViewedContext.path;
+                            }
+                            return prevPath;
+                        });
+                    } else {
+                        // Update path based on recent paths (only if path hasn't been manually changed)
+                        const bestPath = getRecentPathForMachine(selectedMachineId, recentMachinePaths);
+                        setSelectedPath(prevPath => {
+                            // Only update if current path is the default /home/
+                            if (prevPath === '/home/' && bestPath !== '/home/') {
+                                return bestPath;
+                            }
+                            return prevPath;
+                        });
+                    }
                 }
             }
         }
-    }, [machines, selectedMachineId, recentMachinePaths]);
+    }, [machines, selectedMachineId, recentMachinePaths, getLastViewedSessionContext]);
 
     React.useEffect(() => {
         let handler = (machineId: string) => {
@@ -282,8 +330,34 @@ function NewSessionScreen() {
     //
 
     const [selectedPath, setSelectedPath] = React.useState<string>(() => {
-        // Initialize with the path from the selected machine (which should be the most recent if available)
-        return getRecentPathForMachine(selectedMachineId, recentMachinePaths);
+        const lastViewedContext = getLastViewedSessionContext();
+        const state = storage.getState();
+        const availableMachines = Object.values(state.machines).filter(m => m.active);
+
+        // Determine the initial machine ID (same logic as selectedMachineId initial state)
+        let initialMachineId: string | null = null;
+        if (lastViewedContext?.machineId && availableMachines.find(m => m.id === lastViewedContext.machineId)) {
+            initialMachineId = lastViewedContext.machineId;
+        } else if (availableMachines.length > 0) {
+            if (recentMachinePaths.length > 0) {
+                for (const recent of recentMachinePaths) {
+                    if (availableMachines.find(m => m.id === recent.machineId)) {
+                        initialMachineId = recent.machineId;
+                        break;
+                    }
+                }
+            }
+            if (!initialMachineId) {
+                initialMachineId = availableMachines[0].id;
+            }
+        }
+
+        // Priority 1: Use the path from last viewed session if machine matches
+        if (lastViewedContext?.path && lastViewedContext.machineId === initialMachineId) {
+            return lastViewedContext.path;
+        }
+        // Fallback: Initialize with the path from the selected machine
+        return getRecentPathForMachine(initialMachineId, recentMachinePaths);
     });
     const handlePathClick = React.useCallback(() => {
         if (selectedMachineId) {
