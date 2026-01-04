@@ -35,6 +35,7 @@ export default function RootLayout() {
                     color: theme.colors.header.tint,
                     ...Typography.default('semiBold'),
                 },
+
             }}
         >
             <Stack.Screen
