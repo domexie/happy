@@ -82,6 +82,7 @@ export interface Session {
         contextSize: number;
         timestamp: number;
     } | null;
+    lastReadSeq?: number | null; // Local last read seq, not synced to server - used to determine unread status
 }
 
 export interface DecryptedMessage {

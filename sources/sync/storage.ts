@@ -11,7 +11,7 @@ import { Purchases, purchasesParse } from "./purchases";
 import { TodoState } from "../-zen/model/ops";
 import { Profile } from "./profile";
 import { UserProfile, RelationshipUpdatedEvent } from "./friendTypes";
-import { loadSettings, loadLocalSettings, saveLocalSettings, saveSettings, loadPurchases, savePurchases, loadProfile, saveProfile, loadSessionDrafts, saveSessionDrafts, loadSessionPermissionModes, saveSessionPermissionModes } from "./persistence";
+import { loadSettings, loadLocalSettings, saveLocalSettings, saveSettings, loadPurchases, savePurchases, loadProfile, saveProfile, loadSessionDrafts, saveSessionDrafts, loadSessionPermissionModes, saveSessionPermissionModes, loadSessionLastReadSeqs, saveSessionLastReadSeqs } from "./persistence";
 import type { PermissionMode } from '@/components/PermissionModeSelector';
 import React from "react";
 import { sync } from "./sync";
@@ -107,6 +107,7 @@ interface StorageState {
     updateSessionDraft: (sessionId: string, draft: string | null) => void;
     updateSessionPermissionMode: (sessionId: string, mode: 'default' | 'acceptEdits' | 'bypassPermissions' | 'plan' | 'read-only' | 'safe-yolo' | 'yolo') => void;
     updateSessionModelMode: (sessionId: string, mode: 'default') => void;
+    updateSessionLastReadSeq: (sessionId: string, seq: number) => void;
     // Artifact methods
     applyArtifacts: (artifacts: DecryptedArtifact[]) => void;
     addArtifact: (artifact: DecryptedArtifact) => void;
@@ -239,6 +240,7 @@ export const storage = create<StorageState>()((set, get) => {
     let profile = loadProfile();
     let sessionDrafts = loadSessionDrafts();
     let sessionPermissionModes = loadSessionPermissionModes();
+    let sessionLastReadSeqs = loadSessionLastReadSeqs();
     return {
         settings,
         settingsVersion: version,
@@ -290,6 +292,7 @@ export const storage = create<StorageState>()((set, get) => {
             // Load drafts and permission modes if sessions are empty (initial load)
             const savedDrafts = Object.keys(state.sessions).length === 0 ? sessionDrafts : {};
             const savedPermissionModes = Object.keys(state.sessions).length === 0 ? sessionPermissionModes : {};
+            const savedLastReadSeqs = Object.keys(state.sessions).length === 0 ? sessionLastReadSeqs : {};
 
             // Merge new sessions with existing ones
             const mergedSessions: Record<string, Session> = { ...state.sessions };
@@ -304,11 +307,14 @@ export const storage = create<StorageState>()((set, get) => {
                 const savedDraft = savedDrafts[session.id];
                 const existingPermissionMode = state.sessions[session.id]?.permissionMode;
                 const savedPermissionMode = savedPermissionModes[session.id];
+                const existingLastReadSeq = state.sessions[session.id]?.lastReadSeq;
+                const savedLastReadSeq = savedLastReadSeqs[session.id];
                 mergedSessions[session.id] = {
                     ...session,
                     presence,
                     draft: existingDraft || savedDraft || session.draft || null,
-                    permissionMode: existingPermissionMode || savedPermissionMode || session.permissionMode || 'default'
+                    permissionMode: existingPermissionMode || savedPermissionMode || session.permissionMode || 'default',
+                    lastReadSeq: existingLastReadSeq ?? savedLastReadSeq ?? null
                 };
             });
 
@@ -752,6 +758,40 @@ export const storage = create<StorageState>()((set, get) => {
                 sessions: updatedSessions
             };
         }),
+        updateSessionLastReadSeq: (sessionId: string, seq: number) => set((state) => {
+            const session = state.sessions[sessionId];
+            if (!session) return state;
+
+            // Only update if seq is higher than current
+            if (session.lastReadSeq !== null && session.lastReadSeq !== undefined && seq <= session.lastReadSeq) {
+                return state;
+            }
+
+            // Update the session with the new lastReadSeq
+            const updatedSessions = {
+                ...state.sessions,
+                [sessionId]: {
+                    ...session,
+                    lastReadSeq: seq
+                }
+            };
+
+            // Collect all lastReadSeqs for persistence
+            const allSeqs: Record<string, number> = {};
+            Object.entries(updatedSessions).forEach(([id, sess]) => {
+                if (sess.lastReadSeq !== null && sess.lastReadSeq !== undefined) {
+                    allSeqs[id] = sess.lastReadSeq;
+                }
+            });
+
+            // Persist lastReadSeqs
+            saveSessionLastReadSeqs(allSeqs);
+
+            return {
+                ...state,
+                sessions: updatedSessions
+            };
+        }),
         // Project management methods
         getProjects: () => projectManager.getProjects(),
         getProject: (projectId: string) => projectManager.getProject(projectId),
@@ -841,25 +881,30 @@ export const storage = create<StorageState>()((set, get) => {
         deleteSession: (sessionId: string) => set((state) => {
             // Remove session from sessions
             const { [sessionId]: deletedSession, ...remainingSessions } = state.sessions;
-            
+
             // Remove session messages if they exist
             const { [sessionId]: deletedMessages, ...remainingSessionMessages } = state.sessionMessages;
-            
+
             // Remove session git status if it exists
             const { [sessionId]: deletedGitStatus, ...remainingGitStatus } = state.sessionGitStatus;
-            
+
             // Clear drafts and permission modes from persistent storage
             const drafts = loadSessionDrafts();
             delete drafts[sessionId];
             saveSessionDrafts(drafts);
-            
+
             const modes = loadSessionPermissionModes();
             delete modes[sessionId];
             saveSessionPermissionModes(modes);
-            
+
+            // Clear lastReadSeq from persistent storage
+            const seqs = loadSessionLastReadSeqs();
+            delete seqs[sessionId];
+            saveSessionLastReadSeqs(seqs);
+
             // Rebuild sessionListViewData without the deleted session
             const sessionListViewData = buildSessionListViewData(remainingSessions);
-            
+
             return {
                 ...state,
                 sessions: remainingSessions,
