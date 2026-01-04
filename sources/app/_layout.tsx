@@ -19,6 +19,8 @@ import { syncRestore } from '@/sync/sync';
 import { RealtimeProvider } from '@/realtime/RealtimeProvider';
 import { FaviconPermissionIndicator } from '@/components/web/FaviconPermissionIndicator';
 import { WebNotificationHandler } from '@/components/web/WebNotificationHandler';
+import { InAppNotificationProvider } from '@/notifications/InAppNotificationContext';
+import { SessionNotificationToast } from '@/components/web/SessionNotificationToast';
 import { CommandPaletteProvider } from '@/components/CommandPalette/CommandPaletteProvider';
 import { StatusBarProvider } from '@/components/StatusBarProvider';
 // import * as SystemUI from 'expo-system-ui';
@@ -223,10 +225,13 @@ export default function RootLayout() {
                             <ModalProvider>
                                 <CommandPaletteProvider>
                                     <RealtimeProvider>
-                                        <WebNotificationHandler />
-                                        <HorizontalSafeAreaWrapper>
-                                            <SidebarNavigator />
-                                        </HorizontalSafeAreaWrapper>
+                                        <InAppNotificationProvider>
+                                            <WebNotificationHandler />
+                                            <SessionNotificationToast />
+                                            <HorizontalSafeAreaWrapper>
+                                                <SidebarNavigator />
+                                            </HorizontalSafeAreaWrapper>
+                                        </InAppNotificationProvider>
                                     </RealtimeProvider>
                                 </CommandPaletteProvider>
                             </ModalProvider>

@@ -9,6 +9,7 @@ import {
     requestNotificationPermission,
     showNotification,
 } from '@/notifications/webNotifications';
+import { useInAppNotification } from '@/notifications/InAppNotificationContext';
 import { getSessionName } from '@/utils/sessionUtils';
 import { t } from '@/text';
 
@@ -18,9 +19,13 @@ interface SessionNotificationState {
 }
 
 /**
- * Component that monitors all sessions and triggers web notifications when:
+ * Component that monitors all sessions and triggers notifications when:
  * 1. A session has pending permission requests
  * 2. A session transitions from thinking to waiting (Claude finished)
+ *
+ * Notification behavior:
+ * - Page in background: Uses Web Notifications API (system notification)
+ * - Page in foreground: Uses in-app toast notification
  *
  * This component renders nothing - it only handles notification logic.
  * Only active on web platform.
@@ -41,6 +46,7 @@ WebNotificationHandler.displayName = 'WebNotificationHandler';
  */
 const WebNotificationHandlerImpl = React.memo(() => {
     const router = useRouter();
+    const { notify: notifyInApp } = useInAppNotification();
 
     // Track previous session states to detect transitions
     const previousStatesRef = React.useRef<Map<string, SessionNotificationState>>(new Map());
@@ -61,8 +67,6 @@ const WebNotificationHandlerImpl = React.memo(() => {
     }, []);
 
     React.useEffect(() => {
-        if (!isNotificationSupported()) return;
-
         const previousStates = previousStatesRef.current;
         const notifiedRequests = notifiedPermissionRequestsRef.current;
         const currentSessionIds = new Set(Object.keys(sessions));
@@ -101,26 +105,33 @@ const WebNotificationHandlerImpl = React.memo(() => {
                 const newRequestIds = requestIds.filter(id => !notifiedRequests.has(`${session.id}:${id}`));
 
                 if (newRequestIds.length > 0) {
-                    // Request notification permission if needed (only once)
-                    void maybeRequestPermission(hasRequestedPermissionRef);
-
                     // Get the first new request for the notification
                     const firstNewRequestId = newRequestIds[0];
                     const firstRequest = requests[firstNewRequestId];
                     const toolName = firstRequest?.tool || 'action';
-
                     const sessionName = getSessionName(session);
-                    showNotification({
+
+                    // Try to show web notification (only works when page is in background)
+                    const webNotificationShown = tryShowWebNotification({
                         title: t('webNotifications.permissionRequired'),
                         body: t('webNotifications.permissionBody', { sessionName, toolName }),
                         tag: `permission-${session.id}`,
-                        onClick: () => {
-                            router.push(`/session/${session.id}`);
-                        },
+                        sessionId: session.id,
+                        router,
+                        hasRequestedPermissionRef,
                     });
 
+                    // If web notification wasn't shown (page is in foreground), show in-app toast
+                    if (!webNotificationShown) {
+                        notifyInApp({
+                            type: 'permission_required',
+                            sessionId: session.id,
+                            sessionName,
+                            toolName,
+                        });
+                    }
+
                     // Always mark as notified to prevent duplicate notifications
-                    // even if notification wasn't shown (e.g., page is focused)
                     newRequestIds.forEach(id => {
                         notifiedRequests.add(`${session.id}:${id}`);
                     });
@@ -129,18 +140,26 @@ const WebNotificationHandlerImpl = React.memo(() => {
 
             // Check for thinking -> waiting transition
             if (previousState && !previousState.isWaiting && currentState.isWaiting) {
-                // Session just finished thinking and is now waiting for input
-                void maybeRequestPermission(hasRequestedPermissionRef);
-
                 const sessionName = getSessionName(session);
-                showNotification({
+
+                // Try to show web notification (only works when page is in background)
+                const webNotificationShown = tryShowWebNotification({
                     title: t('webNotifications.sessionReady'),
                     body: t('webNotifications.sessionReadyBody', { sessionName }),
                     tag: `ready-${session.id}`,
-                    onClick: () => {
-                        router.push(`/session/${session.id}`);
-                    },
+                    sessionId: session.id,
+                    router,
+                    hasRequestedPermissionRef,
                 });
+
+                // If web notification wasn't shown (page is in foreground), show in-app toast
+                if (!webNotificationShown) {
+                    notifyInApp({
+                        type: 'session_ready',
+                        sessionId: session.id,
+                        sessionName,
+                    });
+                }
             }
 
             // Update previous state
@@ -160,12 +179,38 @@ const WebNotificationHandlerImpl = React.memo(() => {
             }
         }
 
-    }, [sessions]);
+    }, [sessions, notifyInApp]);
 
     return null;
 });
 
 WebNotificationHandlerImpl.displayName = 'WebNotificationHandlerImpl';
+
+/**
+ * Try to show a web notification. Returns true if shown, false if not (e.g., page is in foreground)
+ */
+function tryShowWebNotification(options: {
+    title: string;
+    body: string;
+    tag: string;
+    sessionId: string;
+    router: ReturnType<typeof useRouter>;
+    hasRequestedPermissionRef: React.MutableRefObject<boolean>;
+}): boolean {
+    if (!isNotificationSupported()) return false;
+
+    // Request notification permission if needed (only once)
+    void maybeRequestPermission(options.hasRequestedPermissionRef);
+
+    return showNotification({
+        title: options.title,
+        body: options.body,
+        tag: options.tag,
+        onClick: () => {
+            options.router.push(`/session/${options.sessionId}`);
+        },
+    });
+}
 
 /**
  * Request notification permission if we haven't already and it's in default state
