@@ -367,7 +367,15 @@ export const ca: TranslationStructure = {
         deleteSessionWarning: 'Aquesta acció no es pot desfer. Tots els missatges i dades associats amb aquesta sessió s\'eliminaran permanentment.',
         failedToDeleteSession: 'Error en eliminar la sessió',
         sessionDeleted: 'Sessió eliminada amb èxit',
-        
+
+    },
+
+    projectActions: {
+        // Used by ActiveSessionsGroupCompact context menu
+        archiveAllSessions: 'Arxiva totes les sessions',
+        archiveAllSessionsConfirm: ({ count }: { count: number }) =>
+            `Segur que vols arxivar ${count} ${count === 1 ? 'sessió' : 'sessions'} en aquest directori?`,
+        archive: 'Arxiva',
     },
 
     components: {

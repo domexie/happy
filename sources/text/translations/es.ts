@@ -367,7 +367,15 @@ export const es: TranslationStructure = {
         deleteSessionWarning: 'Esta acción no se puede deshacer. Todos los mensajes y datos asociados con esta sesión se eliminarán permanentemente.',
         failedToDeleteSession: 'Error al eliminar la sesión',
         sessionDeleted: 'Sesión eliminada exitosamente',
-        
+
+    },
+
+    projectActions: {
+        // Used by ActiveSessionsGroupCompact context menu
+        archiveAllSessions: 'Archivar todas las sesiones',
+        archiveAllSessionsConfirm: ({ count }: { count: number }) =>
+            `¿Seguro que quieres archivar ${count} ${count === 1 ? 'sesión' : 'sesiones'} en este directorio?`,
+        archive: 'Archivar',
     },
 
     components: {

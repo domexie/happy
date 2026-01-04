@@ -14,6 +14,10 @@ import { useNavigateToSession } from '@/hooks/useNavigateToSession';
 import { useIsTablet } from '@/utils/responsive';
 import { ProjectGitStatus } from './ProjectGitStatus';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from 'react-native-reanimated';
+import { Modal } from '@/modal';
+import { machineSpawnNewSession, sessionKill } from '@/sync/ops';
+import { isMachineOnline } from '@/utils/machineUtils';
+import { useRouter } from 'expo-router';
 
 const stylesheet = StyleSheet.create((theme, runtime) => ({
     container: {
@@ -229,6 +233,7 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
     const styles = stylesheet;
     const { theme } = useUnistyles();
     const machines = useAllMachines();
+    const router = useRouter();
     const [collapsedPaths, setCollapsedPaths] = useLocalSettingMutable('collapsedProjectPaths');
 
     const isCollapsed = React.useCallback((path: string) => {
@@ -250,6 +255,71 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
         });
         return map;
     }, [machines]);
+
+    // Context menu handler for project group
+    const handleProjectContextMenu = React.useCallback((
+        projectPath: string,
+        projectSessions: Session[],
+        machine: Machine | null,
+        machineId: string
+    ) => {
+        const isOnline = machine && isMachineOnline(machine);
+        const activeSessions = projectSessions.filter(s => s.active);
+
+        const buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }> = [];
+
+        // New session action - only if machine is online
+        if (isOnline) {
+            buttons.push({
+                text: t('newSession.startNewSessionInFolder'),
+                onPress: async () => {
+                    const result = await machineSpawnNewSession({
+                        machineId,
+                        directory: projectPath,
+                    });
+                    if (result.type === 'success' && result.sessionId) {
+                        router.push(`/session/${result.sessionId}`);
+                    } else if (result.type === 'error') {
+                        Modal.alert(t('common.error'), result.errorMessage || t('newSession.failedToStart'));
+                    }
+                }
+            });
+        }
+
+        // Archive all sessions action - only if there are active sessions
+        if (activeSessions.length > 0) {
+            buttons.push({
+                text: t('projectActions.archiveAllSessions'),
+                style: 'destructive',
+                onPress: () => {
+                    Modal.alert(
+                        t('projectActions.archiveAllSessions'),
+                        t('projectActions.archiveAllSessionsConfirm', { count: activeSessions.length }),
+                        [
+                            { text: t('common.cancel'), style: 'cancel' },
+                            {
+                                text: t('projectActions.archive'),
+                                style: 'destructive',
+                                onPress: async () => {
+                                    for (const session of activeSessions) {
+                                        await sessionKill(session.id);
+                                    }
+                                }
+                            }
+                        ]
+                    );
+                }
+            });
+        }
+
+        // Cancel button
+        buttons.push({ text: t('common.cancel'), style: 'cancel' });
+
+        // Only show menu if there are actions available (besides cancel)
+        if (buttons.length > 1) {
+            Modal.alert(projectPath, undefined, buttons);
+        }
+    }, [router]);
 
     // Get all current project paths from sessions
     const currentProjectPaths = React.useMemo(() => {
@@ -348,12 +418,20 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
 
                 const collapsed = isCollapsed(projectPath);
 
+                // Get all sessions and first machine for context menu
+                const allProjectSessions = Array.from(projectGroup.machines.values()).flatMap(mg => mg.sessions);
+                const firstMachineEntry = Array.from(projectGroup.machines.entries())[0];
+                const firstMachine = firstMachineEntry?.[1]?.machine ?? null;
+                const firstMachineId = firstMachineEntry?.[0] ?? '';
+
                 return (
                     <View key={projectPath}>
                         {/* Section header on grouped background */}
                         <Pressable
                             style={styles.sectionHeader}
                             onPress={() => toggleCollapsed(projectPath)}
+                            onLongPress={() => handleProjectContextMenu(projectPath, allProjectSessions, firstMachine, firstMachineId)}
+                            delayLongPress={500}
                         >
                             <AnimatedChevron
                                 collapsed={collapsed}
