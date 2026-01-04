@@ -13,6 +13,8 @@ export const LocalSettingsSchema = z.object({
     markdownCopyV2: z.boolean().describe('Replace native paragraph selection with long-press modal for full markdown copy'),
     // CLI version acknowledgments - keyed by machineId
     acknowledgedCliVersions: z.record(z.string(), z.string()).describe('Acknowledged CLI versions per machine'),
+    // Collapsed project paths in compact session view (accordion state)
+    collapsedProjectPaths: z.array(z.string()).describe('Project paths that are collapsed in compact session view'),
 });
 
 //
@@ -35,6 +37,7 @@ export const localSettingsDefaults: LocalSettings = {
     themePreference: 'adaptive',
     markdownCopyV2: false,
     acknowledgedCliVersions: {},
+    collapsedProjectPaths: [],
 };
 Object.freeze(localSettingsDefaults);
 

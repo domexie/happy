@@ -1,24 +1,19 @@
 import React from 'react';
-import { View, Pressable, Platform, ActivityIndicator } from 'react-native';
+import { View, Pressable, Platform, LayoutChangeEvent } from 'react-native';
 import { Text } from '@/components/StyledText';
-import { router, useRouter } from 'expo-router';
 import { Session, Machine } from '@/sync/storageTypes';
 import { Ionicons } from '@expo/vector-icons';
 import { getSessionName, useSessionStatus, getSessionAvatarId, formatPathRelativeToHome } from '@/utils/sessionUtils';
 import { Avatar } from './Avatar';
 import { Typography } from '@/constants/Typography';
 import { StatusDot } from './StatusDot';
-import { useAllMachines, useSetting } from '@/sync/storage';
+import { useAllMachines, useLocalSettingMutable } from '@/sync/storage';
 import { StyleSheet, useUnistyles } from 'react-native-unistyles';
-import { isMachineOnline } from '@/utils/machineUtils';
-import { machineSpawnNewSession } from '@/sync/ops';
-import { resolveAbsolutePath } from '@/utils/pathUtils';
-import { storage } from '@/sync/storage';
-import { Modal } from '@/modal';
 import { t } from '@/text';
 import { useNavigateToSession } from '@/hooks/useNavigateToSession';
 import { useIsTablet } from '@/utils/responsive';
 import { ProjectGitStatus } from './ProjectGitStatus';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, interpolate } from 'react-native-reanimated';
 
 const stylesheet = StyleSheet.create((theme, runtime) => ({
     container: {
@@ -62,6 +57,9 @@ const stylesheet = StyleSheet.create((theme, runtime) => ({
         letterSpacing: Platform.select({ ios: -0.08, default: 0.1 }),
         fontWeight: Platform.select({ ios: 'normal', default: '500' }),
         flex: 1,
+    },
+    chevronIcon: {
+        marginRight: 4,
     },
     sessionRow: {
         height: 56,
@@ -137,10 +135,96 @@ interface ActiveSessionsGroupProps {
     selectedSessionId?: string;
 }
 
+// Animated chevron icon that rotates between collapsed (pointing right) and expanded (pointing down) states
+const AnimatedChevron = React.memo(({ collapsed, color }: { collapsed: boolean; color: string }) => {
+    const rotation = useSharedValue(collapsed ? 0 : 1);
+
+    React.useEffect(() => {
+        rotation.value = withTiming(collapsed ? 0 : 1, { duration: 200 });
+    }, [collapsed, rotation]);
+
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ rotate: `${interpolate(rotation.value, [0, 1], [0, 90])}deg` }],
+    }));
+
+    return (
+        <Animated.View style={[stylesheet.chevronIcon, animatedStyle]}>
+            <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={color}
+            />
+        </Animated.View>
+    );
+});
+
+// Collapsible container with height animation
+const CollapsibleCard = React.memo(({ collapsed, children }: { collapsed: boolean; children: React.ReactNode }) => {
+    const [measuredHeight, setMeasuredHeight] = React.useState(0);
+    const animatedHeight = useSharedValue(collapsed ? 0 : 1);
+    const hasInitialized = React.useRef(false);
+
+    React.useEffect(() => {
+        // Skip animation on initial render if already collapsed
+        if (!hasInitialized.current) {
+            hasInitialized.current = true;
+            animatedHeight.value = collapsed ? 0 : 1;
+            return;
+        }
+        animatedHeight.value = withTiming(collapsed ? 0 : 1, { duration: 200 });
+    }, [collapsed, animatedHeight]);
+
+    const handleLayout = React.useCallback((event: LayoutChangeEvent) => {
+        const height = event.nativeEvent.layout.height;
+        if (height > 0 && measuredHeight === 0) {
+            setMeasuredHeight(height);
+        }
+    }, [measuredHeight]);
+
+    const animatedStyle = useAnimatedStyle(() => {
+        if (measuredHeight === 0) {
+            return { opacity: collapsed ? 0 : 1 };
+        }
+        return {
+            height: interpolate(animatedHeight.value, [0, 1], [0, measuredHeight]),
+            opacity: animatedHeight.value,
+            overflow: 'hidden' as const,
+        };
+    });
+
+    // First render: measure the content
+    if (measuredHeight === 0 && !collapsed) {
+        return (
+            <View style={stylesheet.projectCard} onLayout={handleLayout}>
+                {children}
+            </View>
+        );
+    }
+
+    return (
+        <Animated.View style={[stylesheet.projectCard, animatedStyle]}>
+            {children}
+        </Animated.View>
+    );
+});
 
 export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: ActiveSessionsGroupProps) {
     const styles = stylesheet;
+    const { theme } = useUnistyles();
     const machines = useAllMachines();
+    const [collapsedPaths, setCollapsedPaths] = useLocalSettingMutable('collapsedProjectPaths');
+
+    const isCollapsed = React.useCallback((path: string) => {
+        return collapsedPaths.includes(path);
+    }, [collapsedPaths]);
+
+    const toggleCollapsed = React.useCallback((path: string) => {
+        if (collapsedPaths.includes(path)) {
+            setCollapsedPaths(collapsedPaths.filter(p => p !== path));
+        } else {
+            setCollapsedPaths([...collapsedPaths, path]);
+        }
+    }, [collapsedPaths, setCollapsedPaths]);
 
     const machinesMap = React.useMemo(() => {
         const map: Record<string, Machine> = {};
@@ -149,6 +233,26 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
         });
         return map;
     }, [machines]);
+
+    // Get all current project paths from sessions
+    const currentProjectPaths = React.useMemo(() => {
+        const paths = new Set<string>();
+        sessions.forEach(session => {
+            const projectPath = session.metadata?.path || '';
+            if (projectPath) {
+                paths.add(projectPath);
+            }
+        });
+        return paths;
+    }, [sessions]);
+
+    // Clean up stale collapsed paths that no longer exist
+    React.useEffect(() => {
+        const stalePaths = collapsedPaths.filter(path => !currentProjectPaths.has(path));
+        if (stalePaths.length > 0) {
+            setCollapsedPaths(collapsedPaths.filter(path => currentProjectPaths.has(path)));
+        }
+    }, [currentProjectPaths, collapsedPaths, setCollapsedPaths]);
 
     // Group sessions by project, then associate with machine
     const projectGroups = React.useMemo(() => {
@@ -225,10 +329,19 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
                 const firstSession = Array.from(projectGroup.machines.values())[0]?.sessions[0];
                 const avatarId = firstSession ? getSessionAvatarId(firstSession) : undefined;
 
+                const collapsed = isCollapsed(projectPath);
+
                 return (
                     <View key={projectPath}>
                         {/* Section header on grouped background */}
-                        <View style={styles.sectionHeader}>
+                        <Pressable
+                            style={styles.sectionHeader}
+                            onPress={() => toggleCollapsed(projectPath)}
+                        >
+                            <AnimatedChevron
+                                collapsed={collapsed}
+                                color={theme.colors.groupped.sectionTitle}
+                            />
                             <View style={styles.sectionHeaderLeft}>
                                 {avatarId && (
                                     <View style={styles.sectionHeaderAvatar}>
@@ -243,10 +356,10 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
                             {firstSession ? (
                                 <ProjectGitStatus sessionId={firstSession.id} />
                             ) : null}
-                        </View>
+                        </Pressable>
 
-                        {/* Card with just the sessions */}
-                        <View style={styles.projectCard}>
+                        {/* Card with just the sessions - animated collapse */}
+                        <CollapsibleCard collapsed={collapsed}>
                             {/* Sessions grouped by machine within the card */}
                             {Array.from(projectGroup.machines.entries())
                                 .sort(([, machineA], [, machineB]) => machineA.machineName.localeCompare(machineB.machineName))
@@ -263,7 +376,7 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
                                         ))}
                                     </View>
                                 ))}
-                        </View>
+                        </CollapsibleCard>
                     </View>
                 );
             })}
