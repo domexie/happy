@@ -246,6 +246,12 @@ function SessionViewLoaded({ sessionId, session }: { sessionId: string, session:
         // Trigger session sync
         sync.onSessionVisible(sessionId);
 
+        // Save this session as the last viewed for context-aware new session defaults
+        // Only update if the value is different to avoid unnecessary storage writes
+        const currentValue = storage.getState().localSettings.lastViewedSessionId;
+        if (currentValue !== sessionId) {
+            storage.getState().applyLocalSettings({ lastViewedSessionId: sessionId });
+        }
 
         // Initialize git status sync for this session
         gitStatusSync.getSync(sessionId);

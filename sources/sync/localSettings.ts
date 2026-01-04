@@ -17,6 +17,8 @@ export const LocalSettingsSchema = z.object({
     sidebarCollapsed: z.boolean().describe('Whether the sidebar is collapsed to show only icons'),
     // Force tablet layout on small screens
     forceTabletMode: z.boolean().describe('Force tablet layout on phones and small screen devices'),
+    // Last viewed session ID for context-aware new session defaults
+    lastViewedSessionId: z.string().nullable().describe('ID of the last viewed session, used to pre-fill machine/path when creating new sessions'),
 });
 
 //
@@ -41,6 +43,7 @@ export const localSettingsDefaults: LocalSettings = {
     acknowledgedCliVersions: {},
     sidebarCollapsed: false,
     forceTabletMode: false,
+    lastViewedSessionId: null,
 };
 Object.freeze(localSettingsDefaults);
 
