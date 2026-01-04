@@ -854,6 +854,16 @@ export const es: TranslationStructure = {
         friendRequestGeneric: 'Nueva solicitud de amistad',
         friendAccepted: ({ name }: { name: string }) => `Ahora eres amigo de ${name}`,
         friendAcceptedGeneric: 'Solicitud de amistad aceptada',
+    },
+
+    webNotifications: {
+        // Web push notification strings
+        permissionRequired: 'Permiso requerido',
+        permissionBody: ({ sessionName, toolName }: { sessionName: string; toolName: string }) =>
+            `La sesión ${sessionName} necesita aprobación para ${toolName}`,
+        sessionReady: 'Sesión lista',
+        sessionReadyBody: ({ sessionName }: { sessionName: string }) =>
+            `${sessionName} está esperando tu comando`,
     }
 } as const;
 

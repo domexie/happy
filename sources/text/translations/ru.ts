@@ -876,6 +876,16 @@ export const ru: TranslationStructure = {
         friendRequestGeneric: 'Новый запрос в друзья',
         friendAccepted: ({ name }: { name: string }) => `Вы теперь друзья с ${name}`,
         friendAcceptedGeneric: 'Запрос в друзья принят',
+    },
+
+    webNotifications: {
+        // Web push notification strings
+        permissionRequired: 'Требуется разрешение',
+        permissionBody: ({ sessionName, toolName }: { sessionName: string; toolName: string }) =>
+            `Сессия ${sessionName} требует подтверждения для ${toolName}`,
+        sessionReady: 'Сессия готова',
+        sessionReadyBody: ({ sessionName }: { sessionName: string }) =>
+            `${sessionName} ожидает вашу команду`,
     }
 } as const;
 
