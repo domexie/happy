@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Pressable, Platform, LayoutChangeEvent } from 'react-native';
+import { View, Pressable, Platform, LayoutChangeEvent, GestureResponderEvent } from 'react-native';
 import { Text } from '@/components/StyledText';
 import { Session, Machine } from '@/sync/storageTypes';
 import { Ionicons } from '@expo/vector-icons';
@@ -163,10 +163,20 @@ const AnimatedChevron = React.memo(({ collapsed, color }: { collapsed: boolean; 
 });
 
 // Collapsible container with height animation
-const CollapsibleCard = React.memo(({ collapsed, children }: { collapsed: boolean; children: React.ReactNode }) => {
+// sessionCount is used to trigger re-measurement when content changes
+const CollapsibleCard = React.memo(({ collapsed, sessionCount, children }: { collapsed: boolean; sessionCount: number; children: React.ReactNode }) => {
     const [measuredHeight, setMeasuredHeight] = React.useState(0);
     const animatedHeight = useSharedValue(collapsed ? 0 : 1);
     const hasInitialized = React.useRef(false);
+    const lastSessionCount = React.useRef(sessionCount);
+
+    // Reset measured height when session count changes to trigger re-measurement
+    React.useEffect(() => {
+        if (lastSessionCount.current !== sessionCount) {
+            lastSessionCount.current = sessionCount;
+            setMeasuredHeight(0);
+        }
+    }, [sessionCount]);
 
     React.useEffect(() => {
         // Skip animation on initial render if already collapsed
@@ -223,7 +233,7 @@ const CollapsibleCard = React.memo(({ collapsed, children }: { collapsed: boolea
     }
 
     return (
-        <Animated.View style={[stylesheet.projectCard, animatedStyle]} onLayout={measuredHeight === 0 ? handleLayout : undefined}>
+        <Animated.View style={[stylesheet.projectCard, animatedStyle]} onLayout={handleLayout}>
             {children}
         </Animated.View>
     );
@@ -424,6 +434,15 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
                 const firstMachine = firstMachineEntry?.[1]?.machine ?? null;
                 const firstMachineId = firstMachineEntry?.[0] ?? '';
 
+                // Handle right-click on web
+                const handleContextMenu = Platform.OS === 'web'
+                    ? (e: GestureResponderEvent) => {
+                        e.preventDefault?.();
+                        (e as any).stopPropagation?.();
+                        handleProjectContextMenu(projectPath, allProjectSessions, firstMachine, firstMachineId);
+                    }
+                    : undefined;
+
                 return (
                     <View key={projectPath}>
                         {/* Section header on grouped background */}
@@ -432,6 +451,8 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
                             onPress={() => toggleCollapsed(projectPath)}
                             onLongPress={() => handleProjectContextMenu(projectPath, allProjectSessions, firstMachine, firstMachineId)}
                             delayLongPress={500}
+                            // @ts-ignore - onContextMenu is available on web
+                            onContextMenu={handleContextMenu}
                         >
                             <AnimatedChevron
                                 collapsed={collapsed}
@@ -454,7 +475,7 @@ export function ActiveSessionsGroupCompact({ sessions, selectedSessionId }: Acti
                         </Pressable>
 
                         {/* Card with just the sessions - animated collapse */}
-                        <CollapsibleCard collapsed={collapsed}>
+                        <CollapsibleCard collapsed={collapsed} sessionCount={allProjectSessions.length}>
                             {/* Sessions grouped by machine within the card */}
                             {Array.from(projectGroup.machines.entries())
                                 .sort(([, machineA], [, machineB]) => machineA.machineName.localeCompare(machineB.machineName))
