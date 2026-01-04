@@ -178,6 +178,8 @@ export const en = {
         showFlavorIconsDescription: 'Display AI provider icons on session avatars',
         compactSessionView: 'Compact Session View',
         compactSessionViewDescription: 'Show active sessions in a more compact layout',
+        fullWidthChat: 'Full-width chat',
+        fullWidthChatDescription: 'Use the full screen width for chat messages on large screens',
     },
 
     settingsFeatures: {

@@ -189,6 +189,8 @@ export const pl: TranslationStructure = {
         showFlavorIconsDescription: 'Wyświetlaj ikony dostawcy AI na awatarach sesji',
         compactSessionView: 'Kompaktowy widok sesji',
         compactSessionViewDescription: 'Pokazuj aktywne sesje w bardziej zwartym układzie',
+        fullWidthChat: 'Czat na pełną szerokość',
+        fullWidthChatDescription: 'Używaj pełnej szerokości ekranu dla wiadomości czatu na dużych ekranach',
     },
 
     settingsFeatures: {

@@ -161,6 +161,8 @@ export const ru: TranslationStructure = {
         showFlavorIconsDescription: 'Отображать иконки провайдеров ИИ на аватарах сессий',
         compactSessionView: 'Компактный вид сессий',
         compactSessionViewDescription: 'Отображать активные сессии в более компактном виде',
+        fullWidthChat: 'Чат на всю ширину',
+        fullWidthChatDescription: 'Использовать полную ширину экрана для сообщений чата на больших экранах',
     },
 
     settingsFeatures: {

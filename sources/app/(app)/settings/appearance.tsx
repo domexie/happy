@@ -31,6 +31,7 @@ export default function AppearanceSettingsScreen() {
     const [avatarStyle, setAvatarStyle] = useSettingMutable('avatarStyle');
     const [showFlavorIcons, setShowFlavorIcons] = useSettingMutable('showFlavorIcons');
     const [compactSessionView, setCompactSessionView] = useSettingMutable('compactSessionView');
+    const [fullWidthChat, setFullWidthChat] = useSettingMutable('fullWidthChat');
     const [themePreference, setThemePreference] = useLocalSettingMutable('themePreference');
     const [preferredLanguage] = useSettingMutable('preferredLanguage');
     
@@ -129,6 +130,17 @@ export default function AppearanceSettingsScreen() {
                         <Switch
                             value={compactSessionView}
                             onValueChange={setCompactSessionView}
+                        />
+                    }
+                />
+                <Item
+                    title={t('settingsAppearance.fullWidthChat')}
+                    subtitle={t('settingsAppearance.fullWidthChatDescription')}
+                    icon={<Ionicons name="resize-outline" size={29} color="#5856D6" />}
+                    rightElement={
+                        <Switch
+                            value={fullWidthChat}
+                            onValueChange={setFullWidthChat}
                         />
                     }
                 />
