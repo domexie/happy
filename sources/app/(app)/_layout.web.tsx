@@ -1,30 +1,27 @@
-import { Stack } from 'expo-router';
 import 'react-native-reanimated';
 import * as React from 'react';
 import { Typography } from '@/constants/Typography';
-import { createHeader } from '@/components/navigation/Header';
-import { Platform, TouchableOpacity, Text } from 'react-native';
-import { isRunningOnMac } from '@/utils/platform';
+import { createHeader } from '@/components/navigation/Header.web';
+import { TouchableOpacity, Text } from 'react-native';
 import { useUnistyles } from 'react-native-unistyles';
 import { t } from '@/text';
+import { WebStack as Stack } from '@/components/navigation/WebStack';
+import { TransitionPresets } from '@react-navigation/stack';
 
 export const unstable_settings = {
     initialRouteName: 'index',
 };
 
 export default function RootLayout() {
-    // Use custom header on Android and Mac Catalyst, native header on iOS (non-Catalyst)
-    const shouldUseCustomHeader = Platform.OS === 'android' || isRunningOnMac() || Platform.OS === 'web';
     const { theme } = useUnistyles();
 
     return (
         <Stack
             initialRouteName='index'
             screenOptions={{
-                header: shouldUseCustomHeader ? createHeader : undefined,
+                header: createHeader,
                 headerBackTitle: t('common.back'),
-                headerShadowVisible: false,
-                contentStyle: {
+                cardStyle: {
                     backgroundColor: theme.colors.surface,
                 },
                 headerStyle: {
@@ -35,6 +32,8 @@ export default function RootLayout() {
                     color: theme.colors.header.tint,
                     ...Typography.default('semiBold'),
                 },
+                // Add slide animation for web
+                ...TransitionPresets.SlideFromRightIOS,
             }}
         >
             <Stack.Screen
@@ -287,13 +286,6 @@ export default function RootLayout() {
                     headerShown: true,
                     headerTitle: 'Connect to Claude',
                     headerBackTitle: t('common.back'),
-                    // headerStyle: {
-                    //     backgroundColor: Platform.OS === 'web' ? theme.colors.header.background : '#1F1E1C',
-                    // },
-                    // headerTintColor: Platform.OS === 'web' ? theme.colors.header.tint : '#FFFFFF',
-                    // headerTitleStyle: {
-                    //     color: Platform.OS === 'web' ? theme.colors.header.tint : '#FFFFFF',
-                    // },
                 }}
             />
             <Stack.Screen
@@ -315,7 +307,7 @@ export default function RootLayout() {
                 options={{
                     headerTitle: t('newSession.title'),
                     headerBackTitle: t('common.back'),
-                    presentation: 'modal',
+                    ...TransitionPresets.ModalSlideFromBottomIOS,
                 }}
             />
             <Stack.Screen
@@ -327,7 +319,7 @@ export default function RootLayout() {
             <Stack.Screen
                 name="zen/new"
                 options={{
-                    presentation: 'modal',
+                    ...TransitionPresets.ModalSlideFromBottomIOS,
                     headerTitle: 'New Task',
                     headerBackTitle: t('common.cancel'),
                 }}
@@ -335,7 +327,7 @@ export default function RootLayout() {
             <Stack.Screen
                 name="zen/view"
                 options={{
-                    presentation: 'modal',
+                    ...TransitionPresets.ModalSlideFromBottomIOS,
                     headerTitle: 'Task Details',
                     headerBackTitle: t('common.back'),
                 }}
